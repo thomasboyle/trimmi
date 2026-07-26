@@ -2,6 +2,7 @@
 #include "Theme.h"
 #include "TimeFormat.h"
 
+#include <QFont>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -141,6 +142,9 @@ void TimelineWidget::drawGrip(QPainter& p, int x, const QString& label, bool act
     QFont f = font();
     f.setPixelSize(11);
     f.setBold(true);
+    f.setHintingPreference(QFont::PreferFullHinting);
+    f.setStyleStrategy(static_cast<QFont::StyleStrategy>(
+        QFont::NoAntialias | QFont::NoSubpixelAntialias));
     p.setFont(f);
     const QRect labelRect(x - 24, track.bottom() + 2, 48, 14);
     p.drawText(labelRect, Qt::AlignHCenter | Qt::AlignTop, label);
@@ -159,6 +163,9 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
     p.setPen(Theme::color(Theme::TextMuted));
     QFont rf = font();
     rf.setPixelSize(11);
+    rf.setHintingPreference(QFont::PreferFullHinting);
+    rf.setStyleStrategy(static_cast<QFont::StyleStrategy>(
+        QFont::NoAntialias | QFont::NoSubpixelAntialias));
     p.setFont(rf);
 
     if (m_durationMs > 0) {
