@@ -60,19 +60,5 @@ Filename: "{app}\{#MyAppExeName}"; \
     Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; \
     Flags: nowait postinstall skipifsilent
 
-[Code]
-function InitializeSetup(): Boolean;
-var
-  PayloadExe: String;
-begin
-  Result := True;
-  { src = folder containing this .iss file }
-  PayloadExe := ExpandConstant('{src}\..\dist\payload\{#MyAppExeName}');
-  if not FileExists(PayloadExe) then
-  begin
-    MsgBox('Standalone payload not found:'#13#10 + PayloadExe + #13#10#13#10 +
-           'Run installer\stage_payload.ps1 (or build_installer.ps1) before compiling.',
-           mbError, MB_OK);
-    Result := False;
-  end;
-end;
+; Payload presence is validated by build_installer.ps1 before ISCC runs.
+; Do not check dist\payload at install time — {src} is the Setup.exe folder on the end PC.
