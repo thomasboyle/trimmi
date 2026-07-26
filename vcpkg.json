@@ -2,6 +2,7 @@
   "name": "trimmi",
   "version-string": "1.0.0",
   "description": "Simple fast video trimmer",
+  "builtin-baseline": "40f3c709db80acf154ac4b17a1f83c564ebd022e",
   "dependencies": [
     "qtbase",
     "qtmultimedia",
