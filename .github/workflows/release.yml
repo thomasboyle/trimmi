@@ -23,7 +23,7 @@ permissions:
 jobs:
   release:
     name: Build installer & publish
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 60
 
     steps:
