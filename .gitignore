@@ -1,0 +1,10 @@
+/build/
+/dist/
+/tools/ffmpeg/
+/.vs/
+/out/
+/CMakeUserPresets.json
+*.user
+*.autosave
+.DS_Store
+vcpkg_installed/

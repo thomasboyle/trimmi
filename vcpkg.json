@@ -1,0 +1,11 @@
+{
+  "name": "trimmi",
+  "version-string": "1.0.0",
+  "description": "Simple fast video trimmer",
+  "dependencies": [
+    "qtbase",
+    "qtmultimedia",
+    "qtsvg",
+    "ffmpeg"
+  ]
+}
