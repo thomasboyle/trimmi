@@ -115,11 +115,11 @@ $ffmpegExe = Find-LocalTool "ffmpeg"
 $ffprobeExe = Find-LocalTool "ffprobe"
 
 if ((-not $ffmpegExe -or -not $ffprobeExe) -and -not $SkipFfmpegDownload) {
-    Write-Host "    Downloading standalone FFmpeg essentials (static)…"
+    Write-Host "    Downloading standalone FFmpeg full (static)…"
     $toolsDir = Join-Path $root "tools\ffmpeg"
     New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
-    $zip = Join-Path $toolsDir "ffmpeg-release-essentials.zip"
-    $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+    $zip = Join-Path $toolsDir "ffmpeg-release-full.zip"
+    $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.zip"
     try {
         Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
         Expand-Archive -Path $zip -DestinationPath $toolsDir -Force

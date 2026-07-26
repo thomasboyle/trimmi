@@ -23,7 +23,7 @@ permissions:
 jobs:
   release:
     name: Build installer & publish
-    runs-on: windows-2022
+    runs-on: windows-latest
     timeout-minutes: 60
 
     steps:
@@ -56,7 +56,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.3"
+          version: "6.12.0"
           arch: win64_msvc2022_64
           modules: qtmultimedia
           archives: qtbase qtsvg qttools
@@ -67,8 +67,8 @@ jobs:
         run: |
           $toolsDir = Join-Path $env:GITHUB_WORKSPACE "tools\ffmpeg"
           New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
-          $zip = Join-Path $toolsDir "ffmpeg-release-essentials.zip"
-          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" `
+          $zip = Join-Path $toolsDir "ffmpeg-release-full.zip"
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.zip" `
             -OutFile $zip -UseBasicParsing
           Expand-Archive -Path $zip -DestinationPath $toolsDir -Force
           $bin = Get-ChildItem -Path $toolsDir -Recurse -Filter "ffmpeg.exe" |
@@ -84,7 +84,7 @@ jobs:
         shell: pwsh
         run: |
           $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          cmake -B build -G "Visual Studio 17 2022" -A x64
+          cmake -B build -G "Visual Studio 18 2026" -A x64
 
       - name: Build Trimmi
         shell: pwsh
@@ -140,7 +140,7 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Trimmi ${{ steps.version.outputs.version }}
