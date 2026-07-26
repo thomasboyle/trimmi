@@ -15,6 +15,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 option(TRIMMI_BUNDLE_FFMPEG "Copy ffmpeg/ffprobe next to the executable" ON)
+option(TRIMMI_RUN_WINDEPLOYQT "Run windeployqt after build (disable in CI; stage_payload does it)" ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets Svg Concurrent)
 
@@ -84,7 +85,7 @@ if(TRIMMI_BUNDLE_FFMPEG)
     endif()
 endif()
 
-if(WIN32)
+if(WIN32 AND TRIMMI_RUN_WINDEPLOYQT)
     find_program(WINDEPLOYQT_EXECUTABLE NAMES windeployqt windeployqt.exe
         HINTS "${Qt6_DIR}/../../../bin")
     if(WINDEPLOYQT_EXECUTABLE)

@@ -22,6 +22,13 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  FFMPEG_CACHE_DIR: tools/ffmpeg
+  INNO_CACHE_DIR: .tools/innosetup
+  # Pin for stable cache keys (bump when intentionally upgrading)
+  QT_VERSION: "6.12.0"
+  FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
+
 jobs:
   release:
     name: Build installer & publish
@@ -36,8 +43,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Read release version
         id: version
@@ -60,24 +65,22 @@ jobs:
             throw "Tag $tag already exists. Bump VERSION on main before releasing again."
           }
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
+      - name: Cache FFmpeg tools
+        id: cache-ffmpeg
+        uses: actions/cache@v4
         with:
-          # aqt 3.3.0 cannot install Qt 6.11+ (repo layout change); use git until 3.4+
-          aqtsource: git+https://github.com/miurahr/aqtinstall.git
-          version: "6.*.*"
-          arch: win64_msvc2022_64
-          modules: qtmultimedia
-          cache: true
+          path: ${{ env.FFMPEG_CACHE_DIR }}
+          key: ffmpeg-btbn-win64-gpl-master-v1
 
       - name: Download FFmpeg tools
+        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          $toolsDir = Join-Path $env:GITHUB_WORKSPACE "tools\ffmpeg"
+          $toolsDir = Join-Path $env:GITHUB_WORKSPACE $env:FFMPEG_CACHE_DIR
           New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
           $zip = Join-Path $toolsDir "ffmpeg-win64-gpl.zip"
           $urls = @(
-            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+            $env:FFMPEG_URL,
             "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
           )
           $downloaded = $false
@@ -93,33 +96,57 @@ jobs:
           }
           if (-not $downloaded) { throw "Could not download FFmpeg from any mirror" }
           Expand-Archive -Path $zip -DestinationPath $toolsDir -Force
+          Remove-Item $zip -Force -ErrorAction SilentlyContinue
+
+      - name: Export FFmpeg path
+        shell: pwsh
+        run: |
+          $toolsDir = Join-Path $env:GITHUB_WORKSPACE $env:FFMPEG_CACHE_DIR
           $bin = Get-ChildItem -Path $toolsDir -Recurse -Filter "ffmpeg.exe" |
             Where-Object { $_.DirectoryName -match '[\\/]bin$' } |
             Select-Object -First 1
-          if (-not $bin) { throw "ffmpeg.exe not found after download" }
+          if (-not $bin) { throw "ffmpeg.exe not found under $toolsDir" }
           $binDir = $bin.DirectoryName
           "FFMPEG_BIN=$binDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "FFmpeg tools: $binDir"
           & (Join-Path $binDir "ffmpeg.exe") -version | Select-Object -First 1
 
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          # aqt 3.3.0 cannot install Qt 6.11+ (repo layout change); use git until 3.4+
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git
+          version: ${{ env.QT_VERSION }}
+          arch: win64_msvc2022_64
+          modules: qtmultimedia
+          archives: qtbase qtsvg qttools qtmultimedia
+          cache: true
+
+      - name: Setup MSVC + Ninja
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Configure CMake
         shell: pwsh
         run: |
           $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          cmake -B build -G "Visual Studio 18 2026" -A x64
+          cmake -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DTRIMMI_RUN_WINDEPLOYQT=OFF
 
       - name: Build Trimmi
         shell: pwsh
         run: |
           $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          cmake --build build --config Release --parallel
+          cmake --build build --parallel
 
       - name: Locate Release output directory
         id: outdir
         shell: pwsh
         run: |
           $exe = Get-ChildItem build -Recurse -Filter Trimmi.exe |
-            Where-Object { $_.FullName -match '\\Release\\' } |
+            Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
           if (-not $exe) {
             Get-ChildItem build -Recurse -Filter Trimmi.exe | Select-Object -First 5 FullName
@@ -129,15 +156,35 @@ jobs:
           "dir=$dir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Host "Output dir: $dir"
 
+      - name: Cache Inno Setup
+        id: cache-inno
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.INNO_CACHE_DIR }}
+          key: innosetup-7.0.2-x64-v1
+
       - name: Install Inno Setup
+        if: steps.cache-inno.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          choco install innosetup -y --no-progress
-          $iscc = @(
-            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
-          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $iscc) { throw "ISCC.exe not found after Inno Setup install" }
+          $dest = Join-Path $env:GITHUB_WORKSPACE $env:INNO_CACHE_DIR
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          $installer = Join-Path $env:RUNNER_TEMP "innosetup.exe"
+          $url = "https://github.com/jrsoftware/issrc/releases/download/is-7_0_2/innosetup-7.0.2-x64.exe"
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile $installer -UseBasicParsing
+          Start-Process -FilePath $installer -ArgumentList "/VERYSILENT","/NORESTART","/ALLUSERS=0","/DIR=`"$dest`"" -Wait
+          if (-not (Test-Path (Join-Path $dest "ISCC.exe"))) {
+            Get-ChildItem $dest -Recurse | Select-Object -First 20 FullName
+            throw "ISCC.exe missing after Inno Setup install in $dest"
+          }
+
+      - name: Export Inno Setup path
+        shell: pwsh
+        run: |
+          $iscc = Join-Path $env:GITHUB_WORKSPACE "$env:INNO_CACHE_DIR\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found: $iscc" }
+          "ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "ISCC: $iscc"
 
       - name: Stage payload and build standalone installer
@@ -147,6 +194,8 @@ jobs:
           $buildDir = "${{ steps.outdir.outputs.dir }}"
           $env:Path = "$env:FFMPEG_BIN;$env:Path"
           & .\installer\stage_payload.ps1 -Configuration Release -BuildDir $buildDir
+          # Prefer cached ISCC over Program Files
+          $env:Path = "$(Split-Path $env:ISCC -Parent);$env:Path"
           & .\installer\build_installer.ps1 -Configuration Release -Version $version -SkipStage
           $setup = Join-Path "dist" "TrimmiSetup-$version.exe"
           if (-not (Test-Path $setup)) {

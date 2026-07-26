@@ -38,12 +38,14 @@ if (-not (Test-Path (Join-Path $payload "platforms\qwindows.dll"))) {
 }
 
 $iscc = @(
+    $env:ISCC,
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-    "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
-) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+    "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe"
+) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 
 if (-not $iscc) {
-    Write-Error "Inno Setup 6 not found. Install from https://jrsoftware.org/isinfo.php"
+    Write-Error "ISCC.exe not found. Install Inno Setup from https://jrsoftware.org/isinfo.php or set ISCC."
 }
 
 $dist = Join-Path $root "dist"

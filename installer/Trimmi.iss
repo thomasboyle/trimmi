@@ -22,9 +22,9 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist
 OutputBaseFilename=TrimmiSetup-{#MyAppVersion}
-Compression=lzma2/ultra64
+; lzma2 (default) is much faster than ultra64; payload is already mostly compressed binaries
+Compression=lzma2
 SolidCompression=yes
-LZMAUseSeparateProcess=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
