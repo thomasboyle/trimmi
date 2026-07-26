@@ -24,7 +24,6 @@ permissions:
 
 env:
   FFMPEG_CACHE_DIR: tools/ffmpeg
-  INNO_CACHE_DIR: .tools/innosetup
   # Pin for stable cache keys (bump when intentionally upgrading)
   QT_VERSION: "6.12.0"
   FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
@@ -122,31 +121,46 @@ jobs:
           archives: qtbase qtsvg qttools qtmultimedia
           cache: true
 
-      - name: Setup MSVC + Ninja
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: Cache Inno Setup
+        id: cache-inno
+        uses: actions/cache@v4
         with:
-          arch: x64
+          path: |
+            C:\Program Files (x86)\Inno Setup 6
+            C:\Program Files\Inno Setup 6
+          key: innosetup-choco-v1
+
+      - name: Install Inno Setup
+        if: steps.cache-inno.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe not found after Inno Setup install" }
+          Write-Host "ISCC: $iscc"
 
       - name: Configure CMake
         shell: pwsh
         run: |
           $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          cmake -B build -G Ninja `
-            -DCMAKE_BUILD_TYPE=Release `
+          cmake -B build -G "Visual Studio 18 2026" -A x64 `
             -DTRIMMI_RUN_WINDEPLOYQT=OFF
 
       - name: Build Trimmi
         shell: pwsh
         run: |
           $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          cmake --build build --parallel
+          cmake --build build --config Release --parallel
 
       - name: Locate Release output directory
         id: outdir
         shell: pwsh
         run: |
           $exe = Get-ChildItem build -Recurse -Filter Trimmi.exe |
-            Sort-Object LastWriteTime -Descending |
+            Where-Object { $_.FullName -match '\\Release\\' } |
             Select-Object -First 1
           if (-not $exe) {
             Get-ChildItem build -Recurse -Filter Trimmi.exe | Select-Object -First 5 FullName
@@ -156,37 +170,6 @@ jobs:
           "dir=$dir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Host "Output dir: $dir"
 
-      - name: Cache Inno Setup
-        id: cache-inno
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.INNO_CACHE_DIR }}
-          key: innosetup-7.0.2-x64-v1
-
-      - name: Install Inno Setup
-        if: steps.cache-inno.outputs.cache-hit != 'true'
-        shell: pwsh
-        run: |
-          $dest = Join-Path $env:GITHUB_WORKSPACE $env:INNO_CACHE_DIR
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          $installer = Join-Path $env:RUNNER_TEMP "innosetup.exe"
-          $url = "https://github.com/jrsoftware/issrc/releases/download/is-7_0_2/innosetup-7.0.2-x64.exe"
-          Write-Host "Downloading $url"
-          Invoke-WebRequest -Uri $url -OutFile $installer -UseBasicParsing
-          Start-Process -FilePath $installer -ArgumentList "/VERYSILENT","/NORESTART","/ALLUSERS=0","/DIR=`"$dest`"" -Wait
-          if (-not (Test-Path (Join-Path $dest "ISCC.exe"))) {
-            Get-ChildItem $dest -Recurse | Select-Object -First 20 FullName
-            throw "ISCC.exe missing after Inno Setup install in $dest"
-          }
-
-      - name: Export Inno Setup path
-        shell: pwsh
-        run: |
-          $iscc = Join-Path $env:GITHUB_WORKSPACE "$env:INNO_CACHE_DIR\ISCC.exe"
-          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found: $iscc" }
-          "ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          Write-Host "ISCC: $iscc"
-
       - name: Stage payload and build standalone installer
         shell: pwsh
         run: |
@@ -194,8 +177,6 @@ jobs:
           $buildDir = "${{ steps.outdir.outputs.dir }}"
           $env:Path = "$env:FFMPEG_BIN;$env:Path"
           & .\installer\stage_payload.ps1 -Configuration Release -BuildDir $buildDir
-          # Prefer cached ISCC over Program Files
-          $env:Path = "$(Split-Path $env:ISCC -Parent);$env:Path"
           & .\installer\build_installer.ps1 -Configuration Release -Version $version -SkipStage
           $setup = Join-Path "dist" "TrimmiSetup-$version.exe"
           if (-not (Test-Path $setup)) {
