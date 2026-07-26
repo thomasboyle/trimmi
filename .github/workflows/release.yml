@@ -1,6 +1,8 @@
 name: Release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       bump:
@@ -23,6 +25,11 @@ permissions:
 jobs:
   release:
     name: Build installer & publish
+    # Skip the bot version-bump push so releases do not loop
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.actor != 'github-actions[bot]' &&
+       !startsWith(github.event.head_commit.message, 'chore: bump version'))
     runs-on: windows-latest
     timeout-minutes: 60
 
@@ -158,16 +165,17 @@ jobs:
           generate_release_notes: true
 
       - name: Bump version for next release
-        if: ${{ inputs.bump != 'none' }}
+        if: ${{ github.event_name == 'push' || inputs.bump != 'none' }}
         id: bump
         shell: pwsh
         run: |
-          $next = (& .\scripts\version.ps1 -Action bump -Part "${{ inputs.bump }}").Trim()
+          $part = "${{ github.event_name == 'push' && 'patch' || inputs.bump }}"
+          $next = (& .\scripts\version.ps1 -Action bump -Part $part).Trim()
           "next=$next" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Host "Next VERSION on main will be $next"
 
       - name: Commit and push version bump
-        if: ${{ inputs.bump != 'none' }}
+        if: ${{ github.event_name == 'push' || inputs.bump != 'none' }}
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"

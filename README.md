@@ -47,7 +47,7 @@ Version is in `VERSION` (`X.Y.Z`):
 
 ## Release
 
-**GitHub Actions:** [`.github/workflows/release.yml`](.github/workflows/release.yml) — **Actions → Release → Run workflow**. Builds, packs the Inno installer, publishes `vX.Y.Z` with `TrimmiSetup-X.Y.Z.exe`, then bumps `VERSION` on `main`.
+**GitHub Actions:** [`.github/workflows/release.yml`](.github/workflows/release.yml) — runs on every merge/push to `main` (and via **Actions → Release → Run workflow**). Builds, packs the Inno installer, publishes `vX.Y.Z` with `TrimmiSetup-X.Y.Z.exe`, then patch-bumps `VERSION` on `main`.
 
 **Local installer** (Inno Setup 6, after a Release build):
 
