@@ -7,6 +7,7 @@
 #include <QIcon>
 #include <QPainter>
 #include <QPixmap>
+#include <QString>
 
 #ifdef Q_OS_WIN
 #  include <windows.h>
@@ -51,7 +52,8 @@ int main(int argc, char* argv[])
     loadAppFonts();
     QApplication::setWindowIcon(makeAppIcon());
 
-    QFont font(QLatin1String(Theme::FontFamily));
+    QFont font;
+    font.setFamily(QString::fromUtf8(Theme::UiFontFamily));
     font.setPixelSize(14);
     font.setStyleStrategy(QFont::NoAntialias);
     app.setFont(font);

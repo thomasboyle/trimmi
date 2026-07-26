@@ -36,7 +36,7 @@ inline constexpr const char* Border = PanelBorder;
 inline constexpr const char* BorderMuted = SurfaceBorder;
 inline constexpr const char* Selection = "rgba(143, 154, 110, 0.35)";
 
-inline constexpr const char* FontFamily = "Pixelify Sans";
+inline constexpr const char* UiFontFamily = "Pixelify Sans";
 
 inline QString appStyleSheet()
 {
