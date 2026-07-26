@@ -123,7 +123,7 @@ void TimelineWidget::emitTrim()
 void TimelineWidget::drawGrip(QPainter& p, int x, const QString& label, bool active) const
 {
     const QRect track = filmstripRect();
-    const QColor accent(QLatin1String(Theme::Accent));
+    const QColor accent = QColor(QLatin1String(Theme::Accent));
     const QColor fill = active ? accent.lighter(115) : accent;
 
     QRect handle(x - kHandleHalf, track.top() - 2, kHandleHalf * 2, track.height() + 4);

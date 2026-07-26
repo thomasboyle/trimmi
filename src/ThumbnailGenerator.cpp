@@ -25,7 +25,7 @@ void ThumbnailGenerator::generate(const QString& path, qint64 durationMs, int co
 {
     cancel();
     const int generation = m_generation.load();
-    QtConcurrent::run([this, path, durationMs, count, generation]() {
+    (void)QtConcurrent::run([this, path, durationMs, count, generation]() {
         runGenerate(path, durationMs, count, generation);
     });
 }

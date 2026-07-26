@@ -16,7 +16,7 @@ set(CMAKE_AUTOUIC ON)
 
 option(TRIMMI_BUNDLE_FFMPEG "Copy ffmpeg/ffprobe next to the executable" ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Svg Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets Svg Concurrent)
 
 set(TRIMMI_SOURCES
     src/main.cpp
@@ -46,6 +46,7 @@ target_include_directories(Trimmi PRIVATE
 target_link_libraries(Trimmi PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
+    Qt6::MultimediaWidgets
     Qt6::Svg
     Qt6::Concurrent
 )

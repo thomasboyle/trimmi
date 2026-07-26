@@ -68,7 +68,6 @@ jobs:
           version: "6.*.*"
           arch: win64_msvc2022_64
           modules: qtmultimedia
-          archives: qtbase qtsvg qttools
           cache: true
 
       - name: Download FFmpeg tools
