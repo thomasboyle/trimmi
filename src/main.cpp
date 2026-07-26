@@ -29,10 +29,10 @@ static QIcon makeAppIcon()
     px.fill(Qt::transparent);
     QPainter p(&px);
     p.setRenderHint(QPainter::Antialiasing, false);
-    p.setBrush(QColor(QLatin1String(Theme::PanelBg)));
-    p.setPen(QPen(QColor(QLatin1String(Theme::SurfaceBorder)), 2));
+    p.setBrush(Theme::color(Theme::PanelBg));
+    p.setPen(QPen(Theme::color(Theme::SurfaceBorder), 2));
     p.drawRoundedRect(QRectF(4, 4, 56, 56), 10, 10);
-    p.setPen(QPen(QColor(QLatin1String(Theme::Accent)), 6.0, Qt::SolidLine, Qt::SquareCap));
+    p.setPen(QPen(Theme::color(Theme::Accent), 6.0, Qt::SolidLine, Qt::SquareCap));
     p.drawLine(QPointF(20, 20), QPointF(44, 44));
     p.drawLine(QPointF(44, 20), QPointF(20, 44));
     return QIcon(px);

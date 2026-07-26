@@ -113,9 +113,9 @@ void DropZone::paintEvent(QPaintEvent* event)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    QColor wash(QLatin1String(Theme::AccentLight));
+    QColor wash = Theme::color(Theme::AccentLight);
     wash.setAlpha(m_dragActive ? 56 : 36);
-    const QColor border(QLatin1String(Theme::Subtitle));
+    const QColor border = Theme::color(Theme::Subtitle);
 
     p.setBrush(wash);
     QPen pen(border, 2.5, Qt::DashLine);

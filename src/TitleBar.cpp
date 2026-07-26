@@ -20,10 +20,10 @@ TitleBar::TitleBar(QWidget* parent)
         px.fill(Qt::transparent);
         QPainter p(&px);
         p.setRenderHint(QPainter::Antialiasing, false);
-        p.setBrush(QColor(QLatin1String(Theme::PanelBg)));
-        p.setPen(QPen(QColor(QLatin1String(Theme::SurfaceBorder)), 1));
+        p.setBrush(Theme::color(Theme::PanelBg));
+        p.setPen(QPen(Theme::color(Theme::SurfaceBorder), 1));
         p.drawRoundedRect(QRectF(1, 1, 16, 16), 3, 3);
-        p.setPen(QPen(QColor(QLatin1String(Theme::Accent)), 2.2, Qt::SolidLine, Qt::SquareCap));
+        p.setPen(QPen(Theme::color(Theme::Accent), 2.2, Qt::SolidLine, Qt::SquareCap));
         p.drawLine(QPointF(4, 4), QPointF(14, 14));
         p.drawLine(QPointF(14, 4), QPointF(4, 14));
         return px;
@@ -77,8 +77,8 @@ void TitleBar::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event);
     QPainter p(this);
-    p.fillRect(rect(), QColor(QLatin1String(Theme::WindowBg)));
-    p.setPen(QColor(QLatin1String(Theme::PanelBorder)));
+    p.fillRect(rect(), Theme::color(Theme::WindowBg));
+    p.setPen(Theme::color(Theme::PanelBorder));
     p.drawLine(0, height() - 1, width(), height() - 1);
 }
 

@@ -15,18 +15,17 @@ QPixmap makeStatusIcon(bool ok)
     QPainter p(&px);
     p.setRenderHint(QPainter::Antialiasing, false);
     if (ok) {
-        p.setBrush(QColor(QLatin1String(Theme::Success)));
-        p.setPen(QPen(QColor(QLatin1String(Theme::TextPrimary)), 1));
+        p.setBrush(Theme::color(Theme::Success));
+        p.setPen(QPen(Theme::color(Theme::TextPrimary), 1));
         p.drawEllipse(QRectF(1, 1, 20, 20));
-        p.setPen(QPen(QColor(QLatin1String(Theme::Surface)), 2.0, Qt::SolidLine, Qt::SquareCap,
-                      Qt::MiterJoin));
+        p.setPen(QPen(Theme::color(Theme::Surface), 2.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
         p.drawLine(QPointF(6, 11.5), QPointF(9.5, 15));
         p.drawLine(QPointF(9.5, 15), QPointF(16, 7.5));
     } else {
-        p.setBrush(QColor(QLatin1String(Theme::Stipple)));
-        p.setPen(QPen(QColor(QLatin1String(Theme::SurfaceBorder)), 1));
+        p.setBrush(Theme::color(Theme::Stipple));
+        p.setPen(QPen(Theme::color(Theme::SurfaceBorder), 1));
         p.drawEllipse(QRectF(1, 1, 20, 20));
-        p.setPen(QPen(QColor(QLatin1String(Theme::TextPrimary)), 2.0, Qt::SolidLine, Qt::SquareCap));
+        p.setPen(QPen(Theme::color(Theme::TextPrimary), 2.0, Qt::SolidLine, Qt::SquareCap));
         p.drawLine(QPointF(7, 7), QPointF(15, 15));
         p.drawLine(QPointF(15, 7), QPointF(7, 15));
     }

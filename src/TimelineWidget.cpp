@@ -123,9 +123,8 @@ void TimelineWidget::emitTrim()
 void TimelineWidget::drawGrip(QPainter& p, int x, const QString& label, bool active) const
 {
     const QRect track = filmstripRect();
-    const QColor fill = active ? QColor(QLatin1String(Theme::AccentHover))
-                               : QColor(QLatin1String(Theme::Accent));
-    const QColor ink = QColor(QLatin1String(Theme::TextPrimary));
+    const QColor fill = active ? Theme::color(Theme::AccentHover) : Theme::color(Theme::Accent);
+    const QColor ink = Theme::color(Theme::TextPrimary);
 
     QRect handle(x - kHandleHalf, track.top() - 2, kHandleHalf * 2, track.height() + 4);
     p.setPen(QPen(ink, 1));
@@ -138,7 +137,7 @@ void TimelineWidget::drawGrip(QPainter& p, int x, const QString& label, bool act
     p.drawLine(cx - 2, cy - 6, cx - 2, cy + 6);
     p.drawLine(cx + 2, cy - 6, cx + 2, cy + 6);
 
-    p.setPen(QColor(QLatin1String(Theme::Subtitle)));
+    p.setPen(Theme::color(Theme::Subtitle));
     QFont f = font();
     f.setPixelSize(11);
     f.setBold(true);
@@ -157,7 +156,7 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
     const QRect film = filmstripRect();
 
     // Ruler ticks
-    p.setPen(QColor(QLatin1String(Theme::TextMuted)));
+    p.setPen(Theme::color(Theme::TextMuted));
     QFont rf = font();
     rf.setPixelSize(11);
     p.setFont(rf);
@@ -167,9 +166,9 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
         for (int i = 0; i <= tickCount; ++i) {
             const qint64 ms = (m_durationMs * i) / tickCount;
             const int x = msToX(ms);
-            p.setPen(QColor(QLatin1String(Theme::PanelBorder)));
+            p.setPen(Theme::color(Theme::PanelBorder));
             p.drawLine(x, ruler.bottom() - 5, x, ruler.bottom());
-            p.setPen(QColor(QLatin1String(Theme::TextMuted)));
+            p.setPen(Theme::color(Theme::TextMuted));
             const QString label = TimeFormat::formatMs(ms, true);
             const int align = (i == 0)                   ? Qt::AlignLeft
                               : (i == tickCount)         ? Qt::AlignRight
@@ -184,7 +183,7 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
     }
 
     // Filmstrip background — warm dark olive paper, not pure black
-    p.setPen(QPen(QColor(QLatin1String(Theme::SurfaceBorder)), 1));
+    p.setPen(QPen(Theme::color(Theme::SurfaceBorder), 1));
     p.setBrush(QColor(QStringLiteral("#2A2924")));
     p.drawRoundedRect(film, 10, 10);
 
@@ -220,10 +219,10 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
                    QColor(30, 29, 26, 140));
 
         // Selection overlay — sage stipple wash
-        QColor sel(QLatin1String(Theme::Accent));
+        QColor sel = Theme::color(Theme::Accent);
         sel.setAlpha(80);
         p.fillRect(QRect(sx, film.top(), qMax(1, ex - sx), film.height()), sel);
-        p.setPen(QPen(QColor(QLatin1String(Theme::AccentLight)), 1.5));
+        p.setPen(QPen(Theme::color(Theme::AccentLight), 1.5));
         p.setBrush(Qt::NoBrush);
         p.drawRect(QRect(sx, film.top(), qMax(1, ex - sx), film.height() - 1));
     }
@@ -231,7 +230,7 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
     // Playhead
     if (m_durationMs > 0) {
         const int px = msToX(m_positionMs);
-        const QColor ink(QLatin1String(Theme::Surface));
+        const QColor ink = Theme::color(Theme::Surface);
         p.setPen(QPen(ink, 1.5));
         p.drawLine(px, film.top() - 4, px, film.bottom() + 2);
         QPainterPath tri;

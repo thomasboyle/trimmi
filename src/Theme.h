@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QColor>
 #include <QString>
 
 namespace Theme {
@@ -37,6 +38,11 @@ inline constexpr const char* BorderMuted = SurfaceBorder;
 inline constexpr const char* Selection = "rgba(143, 154, 110, 0.35)";
 
 inline constexpr const char* UiFontFamily = "Pixelify Sans";
+
+inline QColor color(const char* token)
+{
+    return QColor(QString::fromUtf8(token));
+}
 
 inline QString appStyleSheet()
 {
