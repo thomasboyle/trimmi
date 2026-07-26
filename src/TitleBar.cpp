@@ -6,7 +6,6 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
-#include <QStyle>
 
 TitleBar::TitleBar(QWidget* parent)
     : QWidget(parent)
@@ -20,17 +19,20 @@ TitleBar::TitleBar(QWidget* parent)
         QPixmap px(18, 18);
         px.fill(Qt::transparent);
         QPainter p(&px);
-        p.setRenderHint(QPainter::Antialiasing);
-        QPen pen(QColor(QLatin1String(Theme::Accent)), 2.2, Qt::SolidLine, Qt::RoundCap);
-        p.setPen(pen);
+        p.setRenderHint(QPainter::Antialiasing, false);
+        p.setBrush(QColor(QLatin1String(Theme::PanelBg)));
+        p.setPen(QPen(QColor(QLatin1String(Theme::SurfaceBorder)), 1));
+        p.drawRoundedRect(QRectF(1, 1, 16, 16), 3, 3);
+        p.setPen(QPen(QColor(QLatin1String(Theme::Accent)), 2.2, Qt::SolidLine, Qt::SquareCap));
         p.drawLine(QPointF(4, 4), QPointF(14, 14));
         p.drawLine(QPointF(14, 4), QPointF(4, 14));
         return px;
     }());
 
-    m_titleLabel = new QLabel(QStringLiteral("Simple Video Trimmer"), this);
-    m_titleLabel->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; font-weight: 500;")
-                                    .arg(QLatin1String(Theme::TextPrimary)));
+    m_titleLabel = new QLabel(QStringLiteral("Trimmi"), this);
+    m_titleLabel->setStyleSheet(
+        QStringLiteral("color: %1; font-size: 14px; font-weight: 700; background: transparent;")
+            .arg(QLatin1String(Theme::TextPrimary)));
 
     m_minBtn = new QPushButton(QStringLiteral("—"), this);
     m_maxBtn = new QPushButton(QStringLiteral("□"), this);
@@ -42,13 +44,13 @@ TitleBar::TitleBar(QWidget* parent)
         btn->setCursor(Qt::ArrowCursor);
     }
     m_closeBtn->setObjectName(QStringLiteral("closeButton"));
-    m_closeBtn->setProperty("class", "titleButton");
-    // Keep both object names for stylesheet: close uses closeButton hover
     m_closeBtn->setStyleSheet(QStringLiteral(
         "QPushButton { background: transparent; border: none; min-width: 46px; max-width: 46px;"
-        " min-height: 36px; color: %1; font-size: 11px; }"
-        "QPushButton:hover { background-color: #e81123; color: white; }")
-                                  .arg(QLatin1String(Theme::TextPrimary)));
+        " min-height: 36px; color: %1; font-size: 12px; font-weight: 700; }"
+        "QPushButton:hover { background-color: %2; color: %3; }")
+                                  .arg(QLatin1String(Theme::TextPrimary),
+                                       QLatin1String(Theme::Danger),
+                                       QLatin1String(Theme::Surface)));
 
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(12, 0, 0, 0);
@@ -76,7 +78,7 @@ void TitleBar::paintEvent(QPaintEvent* event)
     Q_UNUSED(event);
     QPainter p(this);
     p.fillRect(rect(), QColor(QLatin1String(Theme::WindowBg)));
-    p.setPen(QColor(QLatin1String(Theme::Border)));
+    p.setPen(QColor(QLatin1String(Theme::PanelBorder)));
     p.drawLine(0, height() - 1, width(), height() - 1);
 }
 

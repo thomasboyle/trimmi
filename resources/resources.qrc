@@ -2,5 +2,11 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <file>icons/app.svg</file>
+        <file>fonts/PixelifySans-Regular.ttf</file>
+        <file>fonts/PixelifySans-Bold.ttf</file>
+        <file>fonts/OFL.txt</file>
+        <file>ui/texture-grain.png</file>
+        <file>ui/deco-leaf-sprig.png</file>
+        <file>ui/icon-camera-add.png</file>
     </qresource>
 </RCC>

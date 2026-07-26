@@ -123,23 +123,24 @@ void TimelineWidget::emitTrim()
 void TimelineWidget::drawGrip(QPainter& p, int x, const QString& label, bool active) const
 {
     const QRect track = filmstripRect();
-    const QColor accent = QColor(QLatin1String(Theme::Accent));
-    const QColor fill = active ? accent.lighter(115) : accent;
+    const QColor fill = active ? QColor(QLatin1String(Theme::AccentHover))
+                               : QColor(QLatin1String(Theme::Accent));
+    const QColor ink = QColor(QLatin1String(Theme::TextPrimary));
 
     QRect handle(x - kHandleHalf, track.top() - 2, kHandleHalf * 2, track.height() + 4);
-    p.setPen(Qt::NoPen);
+    p.setPen(QPen(ink, 1));
     p.setBrush(fill);
     p.drawRoundedRect(handle, 3, 3);
 
-    p.setPen(QPen(Qt::white, 1.4));
+    p.setPen(QPen(ink, 1.4));
     const int cx = handle.center().x();
     const int cy = handle.center().y();
     p.drawLine(cx - 2, cy - 6, cx - 2, cy + 6);
     p.drawLine(cx + 2, cy - 6, cx + 2, cy + 6);
 
-    p.setPen(QColor(QLatin1String(Theme::TextSecondary)));
+    p.setPen(QColor(QLatin1String(Theme::Subtitle)));
     QFont f = font();
-    f.setPointSize(8);
+    f.setPixelSize(11);
     f.setBold(true);
     p.setFont(f);
     const QRect labelRect(x - 24, track.bottom() + 2, 48, 14);
@@ -158,7 +159,7 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
     // Ruler ticks
     p.setPen(QColor(QLatin1String(Theme::TextMuted)));
     QFont rf = font();
-    rf.setPointSize(9);
+    rf.setPixelSize(11);
     p.setFont(rf);
 
     if (m_durationMs > 0) {
@@ -166,7 +167,7 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
         for (int i = 0; i <= tickCount; ++i) {
             const qint64 ms = (m_durationMs * i) / tickCount;
             const int x = msToX(ms);
-            p.setPen(QColor(QLatin1String(Theme::BorderMuted)));
+            p.setPen(QColor(QLatin1String(Theme::PanelBorder)));
             p.drawLine(x, ruler.bottom() - 5, x, ruler.bottom());
             p.setPen(QColor(QLatin1String(Theme::TextMuted)));
             const QString label = TimeFormat::formatMs(ms, true);
@@ -182,10 +183,10 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
         }
     }
 
-    // Filmstrip background
-    p.setPen(QPen(QColor(QLatin1String(Theme::Border)), 1));
-    p.setBrush(QColor(10, 10, 10));
-    p.drawRoundedRect(film, 6, 6);
+    // Filmstrip background — warm dark olive paper, not pure black
+    p.setPen(QPen(QColor(QLatin1String(Theme::SurfaceBorder)), 1));
+    p.setBrush(QColor(QStringLiteral("#2A2924")));
+    p.drawRoundedRect(film, 10, 10);
 
     if (!m_thumbs.isEmpty() && film.width() > 0) {
         const int n = m_thumbs.size();
@@ -204,7 +205,7 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
                 src.setSize(cell.size());
                 p.drawImage(cell, scaled, src);
             }
-            p.setPen(QColor(0, 0, 0, 60));
+            p.setPen(QColor(42, 50, 32, 50));
             p.drawLine(x1, film.top(), x1, film.bottom());
         }
     }
@@ -214,14 +215,15 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
         const int sx = msToX(m_startMs);
         const int ex = msToX(m_endMs);
         p.fillRect(QRect(film.left(), film.top(), sx - film.left(), film.height()),
-                   QColor(0, 0, 0, 120));
+                   QColor(30, 29, 26, 140));
         p.fillRect(QRect(ex, film.top(), film.right() - ex + 1, film.height()),
-                   QColor(0, 0, 0, 120));
+                   QColor(30, 29, 26, 140));
 
-        // Selection overlay
-        QColor sel(47, 127, 240, 70);
+        // Selection overlay — sage stipple wash
+        QColor sel(QLatin1String(Theme::Accent));
+        sel.setAlpha(80);
         p.fillRect(QRect(sx, film.top(), qMax(1, ex - sx), film.height()), sel);
-        p.setPen(QPen(QColor(QLatin1String(Theme::Accent)), 1.5));
+        p.setPen(QPen(QColor(QLatin1String(Theme::AccentLight)), 1.5));
         p.setBrush(Qt::NoBrush);
         p.drawRect(QRect(sx, film.top(), qMax(1, ex - sx), film.height() - 1));
     }
@@ -229,14 +231,15 @@ void TimelineWidget::paintEvent(QPaintEvent* event)
     // Playhead
     if (m_durationMs > 0) {
         const int px = msToX(m_positionMs);
-        p.setPen(QPen(Qt::white, 1.5));
+        const QColor ink(QLatin1String(Theme::Surface));
+        p.setPen(QPen(ink, 1.5));
         p.drawLine(px, film.top() - 4, px, film.bottom() + 2);
         QPainterPath tri;
         tri.moveTo(px, film.top() - 1);
         tri.lineTo(px - 5, film.top() - 8);
         tri.lineTo(px + 5, film.top() - 8);
         tri.closeSubpath();
-        p.setBrush(Qt::white);
+        p.setBrush(ink);
         p.setPen(Qt::NoPen);
         p.drawPath(tri);
     }

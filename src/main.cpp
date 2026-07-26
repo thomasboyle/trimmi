@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QFont>
+#include <QFontDatabase>
 #include <QIcon>
 #include <QPainter>
 #include <QPixmap>
@@ -15,16 +16,22 @@
 #  define TRIMMI_VERSION_STR "0.0.0"
 #endif
 
+static void loadAppFonts()
+{
+    QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/PixelifySans-Regular.ttf"));
+    QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/PixelifySans-Bold.ttf"));
+}
+
 static QIcon makeAppIcon()
 {
     QPixmap px(64, 64);
     px.fill(Qt::transparent);
     QPainter p(&px);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setBrush(QColor(QStringLiteral("#1e1e1e")));
-    p.setPen(Qt::NoPen);
-    p.drawRoundedRect(QRectF(4, 4, 56, 56), 14, 14);
-    p.setPen(QPen(QColor(QStringLiteral("#2f7ff0")), 6.0, Qt::SolidLine, Qt::RoundCap));
+    p.setRenderHint(QPainter::Antialiasing, false);
+    p.setBrush(QColor(QLatin1String(Theme::PanelBg)));
+    p.setPen(QPen(QColor(QLatin1String(Theme::SurfaceBorder)), 2));
+    p.drawRoundedRect(QRectF(4, 4, 56, 56), 10, 10);
+    p.setPen(QPen(QColor(QLatin1String(Theme::Accent)), 6.0, Qt::SolidLine, Qt::SquareCap));
     p.drawLine(QPointF(20, 20), QPointF(44, 44));
     p.drawLine(QPointF(44, 20), QPointF(20, 44));
     return QIcon(px);
@@ -40,10 +47,13 @@ int main(int argc, char* argv[])
     QApplication::setApplicationName(QStringLiteral("Trimmi"));
     QApplication::setOrganizationName(QStringLiteral("Trimmi"));
     QApplication::setApplicationVersion(QLatin1String(TRIMMI_VERSION_STR));
+
+    loadAppFonts();
     QApplication::setWindowIcon(makeAppIcon());
 
-    QFont font(QStringLiteral("Segoe UI"));
-    font.setPixelSize(13);
+    QFont font(QLatin1String(Theme::FontFamily));
+    font.setPixelSize(14);
+    font.setStyleStrategy(QFont::NoAntialias);
     app.setFont(font);
     app.setStyleSheet(Theme::appStyleSheet());
 

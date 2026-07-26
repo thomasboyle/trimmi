@@ -21,12 +21,40 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QPaintEvent>
+#include <QPainter>
+#include <QPixmap>
 #include <QProgressDialog>
 #include <QPushButton>
 #include <QSlider>
 #include <QVBoxLayout>
 
 namespace {
+
+class GrainOverlay : public QWidget {
+public:
+    explicit GrainOverlay(QWidget* parent)
+        : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_TranslucentBackground);
+        setObjectName(QStringLiteral("grainOverlay"));
+        m_grain = QPixmap(QStringLiteral(":/ui/texture-grain.png"));
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        if (m_grain.isNull())
+            return;
+        QPainter p(this);
+        p.setOpacity(0.30);
+        p.drawTiledPixmap(rect(), m_grain);
+    }
+
+private:
+    QPixmap m_grain;
+};
 
 QPushButton* makeIconButton(const QString& text, QWidget* parent)
 {
@@ -184,10 +212,10 @@ void MainWindow::buildUi()
     sidebar->setObjectName(QStringLiteral("sidebarPanel"));
     sidebar->setFixedWidth(340);
     auto* sideLayout = new QVBoxLayout(sidebar);
-    sideLayout->setContentsMargins(18, 18, 18, 18);
-    sideLayout->setSpacing(14);
+    sideLayout->setContentsMargins(14, 14, 14, 14);
+    sideLayout->setSpacing(12);
 
-    auto* selectTitle = new QLabel(QStringLiteral("Select Video"), sidebar);
+    auto* selectTitle = new QLabel(QStringLiteral("1. Select Video"), sidebar);
     selectTitle->setObjectName(QStringLiteral("sectionTitle"));
     m_dropZone = new DropZone(sidebar);
     auto* supports = new QLabel(QStringLiteral("Supports: MP4, MOV, MKV, WebM, AVI, etc."), sidebar);
@@ -197,18 +225,18 @@ void MainWindow::buildUi()
     connect(m_dropZone, &DropZone::selectFileClicked, this, &MainWindow::openFileDialog);
     connect(m_dropZone, &DropZone::fileDropped, this, &MainWindow::loadVideo);
 
-    auto* outputTitle = new QLabel(QStringLiteral("Output Settings"), sidebar);
+    auto* outputTitle = new QLabel(QStringLiteral("2. Output Settings"), sidebar);
     outputTitle->setObjectName(QStringLiteral("sectionTitle"));
 
     auto* encLabel = new QLabel(QStringLiteral("Encoder"), sidebar);
-    encLabel->setObjectName(QStringLiteral("helperText"));
+    encLabel->setObjectName(QStringLiteral("fieldLabel"));
     m_encoderCombo = new QComboBox(sidebar);
     m_encoderHelper =
         new QLabel(QStringLiteral("Will fallback to CPU (AV1) if GPU is not available."), sidebar);
     m_encoderHelper->setObjectName(QStringLiteral("helperText"));
     m_encoderHelper->setWordWrap(true);
 
-    // Green GPU badge shown beside the encoder row when a GPU encoder is selected
+    // Soft sage GPU badge when a GPU encoder is selected
     auto* encRow = new QWidget(sidebar);
     auto* encRowLayout = new QHBoxLayout(encRow);
     encRowLayout->setContentsMargins(0, 0, 0, 0);
@@ -216,8 +244,8 @@ void MainWindow::buildUi()
     m_gpuBadge = new QLabel(QStringLiteral("GPU"), encRow);
     m_gpuBadge->setObjectName(QStringLiteral("gpuBadge"));
     m_gpuBadge->setStyleSheet(QStringLiteral(
-        "QLabel#gpuBadge { background-color: #1f6b3a; color: #7dffa8; border-radius: 4px;"
-        " padding: 2px 7px; font-size: 10px; font-weight: 700; }"));
+        "QLabel#gpuBadge { background-color: #E4E8D4; color: #5F6B45; border: 1px solid #6B744F;"
+        " border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 700; }"));
     m_gpuBadge->setVisible(false);
     encRowLayout->addWidget(m_encoderCombo, 1);
     encRowLayout->addWidget(m_gpuBadge, 0, Qt::AlignVCenter);
@@ -228,7 +256,7 @@ void MainWindow::buildUi()
     });
 
     auto* fmtLabel = new QLabel(QStringLiteral("Format"), sidebar);
-    fmtLabel->setObjectName(QStringLiteral("helperText"));
+    fmtLabel->setObjectName(QStringLiteral("fieldLabel"));
     m_formatCombo = new QComboBox(sidebar);
     m_formatHelper = new QLabel(sidebar);
     m_formatHelper->setObjectName(QStringLiteral("helperText"));
@@ -241,26 +269,37 @@ void MainWindow::buildUi()
 
     m_gpuCard = new GpuStatusCard(sidebar);
 
+    auto* encBlock = new QVBoxLayout;
+    encBlock->setContentsMargins(0, 0, 0, 0);
+    encBlock->setSpacing(4);
+    encBlock->addWidget(encLabel);
+    encBlock->addWidget(encRow);
+
+    auto* fmtBlock = new QVBoxLayout;
+    fmtBlock->setContentsMargins(0, 0, 0, 0);
+    fmtBlock->setSpacing(4);
+    fmtBlock->addWidget(fmtLabel);
+    fmtBlock->addWidget(m_formatCombo);
+
     sideLayout->addWidget(selectTitle);
     sideLayout->addWidget(m_dropZone);
     sideLayout->addWidget(supports);
     sideLayout->addSpacing(8);
     sideLayout->addWidget(outputTitle);
-    sideLayout->addWidget(encLabel);
-    sideLayout->addWidget(encRow);
+    sideLayout->addLayout(encBlock);
     sideLayout->addWidget(m_encoderHelper);
     sideLayout->addSpacing(4);
-    sideLayout->addWidget(fmtLabel);
-    sideLayout->addWidget(m_formatCombo);
+    sideLayout->addLayout(fmtBlock);
     sideLayout->addWidget(m_formatHelper);
     sideLayout->addStretch(1);
     sideLayout->addWidget(m_gpuCard);
 
     // ---- Main panel ----
-    auto* mainPanel = new QWidget(body);
+    auto* mainPanel = new QFrame(body);
+    mainPanel->setObjectName(QStringLiteral("mainPanel"));
     auto* mainLayout = new QVBoxLayout(mainPanel);
-    mainLayout->setContentsMargins(18, 14, 18, 16);
-    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(14, 14, 14, 14);
+    mainLayout->setSpacing(12);
 
     auto* topBar = new QFrame(mainPanel);
     topBar->setObjectName(QStringLiteral("topBar"));
@@ -276,7 +315,8 @@ void MainWindow::buildUi()
 
     m_previewHost = new QWidget(mainPanel);
     m_previewHost->setMinimumHeight(320);
-    m_previewHost->setStyleSheet(QStringLiteral("background-color: #000000; border-radius: 8px;"));
+    m_previewHost->setStyleSheet(
+        QStringLiteral("background-color: #2A2924; border: 1px solid #6B744F; border-radius: 12px;"));
     auto* previewLayout = new QVBoxLayout(m_previewHost);
     previewLayout->setContentsMargins(0, 0, 0, 0);
     previewLayout->addWidget(m_player->videoWidget());
@@ -339,7 +379,7 @@ void MainWindow::buildUi()
     trimLayout->setContentsMargins(0, 4, 0, 0);
 
     auto* startLabel = new QLabel(QStringLiteral("Start"), trimRow);
-    startLabel->setObjectName(QStringLiteral("helperText"));
+    startLabel->setObjectName(QStringLiteral("fieldLabel"));
     auto* startField = makeStepperField(m_startEdit, m_startUp, m_startDown, trimRow);
 
     m_trimDurationLabel = new QLabel(QStringLiteral("Duration  00:00:00.000"), trimRow);
@@ -347,7 +387,7 @@ void MainWindow::buildUi()
     m_trimDurationLabel->setObjectName(QStringLiteral("durationLabel"));
 
     auto* endLabel = new QLabel(QStringLiteral("End"), trimRow);
-    endLabel->setObjectName(QStringLiteral("helperText"));
+    endLabel->setObjectName(QStringLiteral("fieldLabel"));
     auto* endField = makeStepperField(m_endEdit, m_endUp, m_endDown, trimRow);
 
     trimLayout->addWidget(startLabel);
@@ -381,6 +421,8 @@ void MainWindow::buildUi()
     mainLayout->addWidget(trimRow);
     mainLayout->addLayout(bottomRow);
 
+    bodyLayout->setContentsMargins(10, 10, 10, 10);
+    bodyLayout->setSpacing(10);
     bodyLayout->addWidget(sidebar);
     bodyLayout->addWidget(mainPanel, 1);
 
@@ -388,6 +430,11 @@ void MainWindow::buildUi()
     rootLayout->addWidget(body, 1);
     setCentralWidget(root);
     m_normalCentral = root;
+
+    auto* grain = new GrainOverlay(root);
+    grain->setGeometry(root->rect());
+    grain->raise();
+    root->installEventFilter(this);
 
     qApp->installEventFilter(this);
 }
@@ -619,6 +666,12 @@ void MainWindow::changeEvent(QEvent* event)
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 {
+    if (watched == m_normalCentral && event->type() == QEvent::Resize) {
+        if (auto* grain = m_normalCentral->findChild<QWidget*>(QStringLiteral("grainOverlay"))) {
+            grain->setGeometry(m_normalCentral->rect());
+            grain->raise();
+        }
+    }
     if (event->type() == QEvent::KeyPress) {
         auto* key = static_cast<QKeyEvent*>(event);
         if (key->key() == Qt::Key_Escape && m_fullscreen) {

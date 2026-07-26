@@ -4,7 +4,6 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileInfo>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QMimeData>
 #include <QPainter>
@@ -16,28 +15,20 @@ DropZone::DropZone(QWidget* parent)
     : QFrame(parent)
 {
     setAcceptDrops(true);
-    setMinimumHeight(160);
+    setMinimumHeight(168);
+    setFrameShape(QFrame::NoFrame);
     setObjectName(QStringLiteral("dropZone"));
 
     auto* icon = new QLabel(this);
     icon->setAlignment(Qt::AlignCenter);
-    icon->setPixmap([&] {
-        QPixmap px(40, 40);
-        px.fill(Qt::transparent);
-        QPainter p(&px);
-        p.setRenderHint(QPainter::Antialiasing);
-        p.setPen(QPen(QColor(QLatin1String(Theme::TextSecondary)), 1.8));
-        p.setBrush(Qt::NoBrush);
-        p.drawRoundedRect(QRectF(8, 10, 24, 22), 3, 3);
-        p.drawLine(QPointF(20, 6), QPointF(20, 22));
-        p.drawLine(QPointF(14, 14), QPointF(20, 6));
-        p.drawLine(QPointF(26, 14), QPointF(20, 6));
-        return px;
-    }());
+    icon->setPixmap(QPixmap(QStringLiteral(":/ui/icon-camera-add.png"))
+                        .scaled(48, 48, Qt::KeepAspectRatio, Qt::FastTransformation));
+    icon->setStyleSheet(QStringLiteral("background: transparent;"));
 
     auto* dropText = new QLabel(QStringLiteral("Drop a video file here"), this);
     dropText->setAlignment(Qt::AlignCenter);
-    dropText->setStyleSheet(QStringLiteral("color: %1; font-size: 13px;")
+    dropText->setStyleSheet(QStringLiteral(
+        "color: %1; font-size: 14px; font-weight: 700; background: transparent;")
                                 .arg(QLatin1String(Theme::TextPrimary)));
 
     auto* orText = new QLabel(QStringLiteral("or"), this);
@@ -45,9 +36,15 @@ DropZone::DropZone(QWidget* parent)
     orText->setObjectName(QStringLiteral("helperText"));
 
     auto* selectBtn = new QPushButton(QStringLiteral("Select File"), this);
-    selectBtn->setObjectName(QStringLiteral("accentButton"));
     selectBtn->setCursor(Qt::PointingHandCursor);
     selectBtn->setFixedWidth(140);
+
+    auto* leaf = new QLabel(this);
+    leaf->setObjectName(QStringLiteral("leafSprig"));
+    leaf->setAttribute(Qt::WA_TransparentForMouseEvents);
+    leaf->setPixmap(QPixmap(QStringLiteral(":/ui/deco-leaf-sprig.png"))
+                        .scaled(56, 56, Qt::KeepAspectRatio, Qt::FastTransformation));
+    leaf->setStyleSheet(QStringLiteral("background: transparent;"));
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(16, 18, 16, 18);
@@ -116,14 +113,18 @@ void DropZone::paintEvent(QPaintEvent* event)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    const QColor fill = m_dragActive ? QColor(47, 127, 240, 28)
-                                     : QColor(QLatin1String(Theme::PanelBgRaised));
-    const QColor border = m_dragActive ? QColor(QLatin1String(Theme::Accent))
-                                       : QColor(QLatin1String(Theme::BorderMuted));
+    QColor wash(QLatin1String(Theme::AccentLight));
+    wash.setAlpha(m_dragActive ? 56 : 36);
+    const QColor border(QLatin1String(Theme::Subtitle));
 
-    p.setBrush(fill);
-    QPen pen(border, 1.5, Qt::DashLine);
+    p.setBrush(wash);
+    QPen pen(border, 2.5, Qt::DashLine);
     pen.setDashPattern({4, 3});
     p.setPen(pen);
-    p.drawRoundedRect(rect().adjusted(1, 1, -2, -2), 10, 10);
+    p.drawRoundedRect(rect().adjusted(2, 2, -3, -3), 12, 12);
+
+    if (auto* leaf = findChild<QLabel*>(QStringLiteral("leafSprig"))) {
+        leaf->move(width() - leaf->width() - 8, 8);
+        leaf->raise();
+    }
 }

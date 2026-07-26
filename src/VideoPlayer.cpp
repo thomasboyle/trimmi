@@ -16,7 +16,7 @@ VideoPlayer::VideoPlayer(QObject* parent)
 {
     m_videoWidget = new QVideoWidget;
     m_videoWidget->setAspectRatioMode(Qt::KeepAspectRatio);
-    m_videoWidget->setStyleSheet(QStringLiteral("background-color: #000000;"));
+    m_videoWidget->setStyleSheet(QStringLiteral("background-color: #2A2924;"));
 
     m_audio = new QAudioOutput(this);
     m_audio->setVolume(0.8f);
