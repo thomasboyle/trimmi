@@ -11,6 +11,10 @@
 #  include <windows.h>
 #endif
 
+#ifndef TRIMMI_VERSION_STR
+#  define TRIMMI_VERSION_STR "0.0.0"
+#endif
+
 static QIcon makeAppIcon()
 {
     QPixmap px(64, 64);
@@ -35,7 +39,7 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Trimmi"));
     QApplication::setOrganizationName(QStringLiteral("Trimmi"));
-    QApplication::setApplicationVersion(QStringLiteral("1.0.0"));
+    QApplication::setApplicationVersion(QLatin1String(TRIMMI_VERSION_STR));
     QApplication::setWindowIcon(makeAppIcon());
 
     QFont font(QStringLiteral("Segoe UI"));

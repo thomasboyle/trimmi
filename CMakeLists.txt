@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
-project(Trimmi VERSION 1.0.0 LANGUAGES CXX)
+
+set(TRIMMI_VERSION "0.0.0")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" TRIMMI_VERSION_FILE)
+    string(STRIP "${TRIMMI_VERSION_FILE}" TRIMMI_VERSION)
+endif()
+
+project(Trimmi VERSION ${TRIMMI_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -79,6 +86,10 @@ set(TRIMMI_SOURCES
 )
 
 add_executable(Trimmi WIN32 ${TRIMMI_SOURCES})
+
+target_compile_definitions(Trimmi PRIVATE
+    TRIMMI_VERSION_STR="${TRIMMI_VERSION}"
+)
 
 target_include_directories(Trimmi PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src

@@ -68,7 +68,28 @@ Keyboard:
 - `Space` — play / pause
 - `Esc` — exit fullscreen preview
 
-## Standalone installer (Inno Setup)
+## Versioning
+
+The release version lives in the root `VERSION` file (`X.Y.Z`). Keep it in sync with:
+
+```powershell
+.\scripts\version.ps1 -Action get
+.\scripts\version.ps1 -Action set -Version 1.2.0
+.\scripts\version.ps1 -Action bump -Part patch   # also: minor | major
+```
+
+## GitHub Actions release
+
+Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
+
+1. Open **Actions → Release → Run workflow**
+2. Choose the post-release bump (`patch` by default, or `minor` / `major` / `none`)
+3. The job builds Trimmi (vcpkg + Qt + FFmpeg), stages the standalone payload, compiles the Inno installer, and publishes a GitHub Release (`vX.Y.Z`) with `TrimmiSetup-X.Y.Z.exe`
+4. On success it bumps `VERSION` on `main` for the next release
+
+The first run can take a long time while vcpkg builds Qt/FFmpeg; later runs reuse the GitHub Actions binary cache.
+
+## Standalone installer (local)
 
 The Setup.exe is **self-contained**. End users do **not** need Qt, FFmpeg, vcpkg, or the Visual C++ redistributable installed separately.
 
@@ -84,7 +105,7 @@ This will:
 
 1. Stage `dist\payload\` with `Trimmi.exe`, Qt plugins, MSVC CRT (`windeployqt --compiler-runtime`), FFmpeg DLLs, and `ffmpeg.exe` / `ffprobe.exe`
 2. Download a static FFmpeg essentials build if tools are missing (use `-SkipFfmpegDownload` to disable)
-3. Compile `dist\TrimmiSetup-1.0.0.exe`
+3. Compile `dist\TrimmiSetup-<VERSION>.exe`
 
 Only ship that Setup.exe. Or stage without compiling:
 

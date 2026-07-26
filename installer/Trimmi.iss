@@ -3,7 +3,9 @@
 ; Target PCs do not need Qt, FFmpeg, vcpkg, or a separate MSVC redistributable.
 
 #define MyAppName "Trimmi"
+#ifndef MyAppVersion
 #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "Trimmi"
 #define MyAppExeName "Trimmi.exe"
 #define PayloadDir "..\dist\payload"

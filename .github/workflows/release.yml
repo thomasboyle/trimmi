@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump applied to main after a successful release
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - none
+        default: patch
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+  VCPKG_DEFAULT_TRIPLET: x64-windows
+
+jobs:
+  release:
+    name: Build installer & publish
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Export GitHub Actions cache variables for vcpkg
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Read release version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (& .\scripts\version.ps1 -Action get).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Invalid VERSION: $version"
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Releasing $version (tag v$version)"
+
+      - name: Ensure tag does not already exist
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          $remote = git ls-remote --tags origin "refs/tags/$tag"
+          if ($remote) {
+            throw "Tag $tag already exists. Bump VERSION on main before releasing again."
+          }
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: vcpkg.json
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows
+
+      - name: Build Trimmi
+        shell: pwsh
+        run: cmake --build build --config Release --parallel
+
+      - name: Locate Release output directory
+        id: outdir
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build -Recurse -Filter Trimmi.exe |
+            Where-Object { $_.FullName -match '\\Release\\' } |
+            Select-Object -First 1
+          if (-not $exe) {
+            Get-ChildItem build -Recurse -Filter Trimmi.exe | Select-Object -First 5 FullName
+            throw "Trimmi.exe not found after build"
+          }
+          $dir = $exe.DirectoryName
+          "dir=$dir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Output dir: $dir"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe not found after Inno Setup install" }
+          Write-Host "ISCC: $iscc"
+
+      - name: Stage payload and build standalone installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $buildDir = "${{ steps.outdir.outputs.dir }}"
+          & .\installer\stage_payload.ps1 -Configuration Release -BuildDir $buildDir
+          & .\installer\build_installer.ps1 -Configuration Release -Version $version -SkipStage
+          $setup = Join-Path "dist" "TrimmiSetup-$version.exe"
+          if (-not (Test-Path $setup)) {
+            throw "Expected installer missing: $setup"
+          }
+          Write-Host "Installer: $setup ($([math]::Round((Get-Item $setup).Length / 1MB, 1)) MB)"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrimmiSetup-${{ steps.version.outputs.version }}
+          path: dist/TrimmiSetup-${{ steps.version.outputs.version }}.exe
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Trimmi ${{ steps.version.outputs.version }}
+          body: |
+            ## Trimmi ${{ steps.version.outputs.version }}
+
+            Standalone Windows installer — no separate Qt, FFmpeg, or Visual C++ install required.
+
+            ### Install
+            1. Download `TrimmiSetup-${{ steps.version.outputs.version }}.exe`
+            2. Run the installer
+            3. Launch **Trimmi** from the Start Menu or desktop shortcut
+          files: dist/TrimmiSetup-${{ steps.version.outputs.version }}.exe
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+
+      - name: Bump version for next release
+        if: ${{ inputs.bump != 'none' }}
+        id: bump
+        shell: pwsh
+        run: |
+          $next = (& .\scripts\version.ps1 -Action bump -Part "${{ inputs.bump }}").Trim()
+          "next=$next" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Next VERSION on main will be $next"
+
+      - name: Commit and push version bump
+        if: ${{ inputs.bump != 'none' }}
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION vcpkg.json installer/Trimmi.iss
+          if (git diff --cached --quiet) {
+            Write-Host "No version files changed; skipping commit"
+            exit 0
+          }
+          $released = "${{ steps.version.outputs.version }}"
+          $next = "${{ steps.bump.outputs.next }}"
+          git commit -m "chore: bump version to $next after v$released release"
+          git pull --rebase origin main
+          git push origin HEAD:main

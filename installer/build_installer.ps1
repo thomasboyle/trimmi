@@ -5,6 +5,7 @@
 #>
 param(
     [string]$Configuration = "Release",
+    [string]$Version = "",
     [switch]$SkipFfmpegDownload,
     [switch]$SkipStage
 )
@@ -13,6 +14,10 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $payload = Join-Path $root "dist\payload"
 $iss = Join-Path $PSScriptRoot "Trimmi.iss"
+
+if (-not $Version) {
+    $Version = (& (Join-Path $root "scripts\version.ps1") -Action get).Trim()
+}
 
 if (-not $SkipStage) {
     $stageArgs = @{
@@ -44,8 +49,8 @@ if (-not $iscc) {
 $dist = Join-Path $root "dist"
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 
-Write-Host "==> Compiling standalone installer"
-& $iscc $iss
+Write-Host "==> Compiling standalone installer (v$Version)"
+& $iscc "/DMyAppVersion=$Version" $iss
 if ($LASTEXITCODE -ne 0) {
     Write-Error "ISCC failed with exit code $LASTEXITCODE"
 }
