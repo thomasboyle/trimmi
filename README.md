@@ -6,26 +6,28 @@ Portable Windows video trimmer (C++ / Qt 6): drag-and-drop, live preview, filmst
 
 - Windows 10/11 x64
 - Visual Studio 2022 (MSVC) + CMake 3.21+
-- [vcpkg](https://github.com/microsoft/vcpkg) (recommended)
-- `ffmpeg.exe` / `ffprobe.exe` on `PATH` or beside `Trimmi.exe`
+- Qt 6 (Widgets, Multimedia, Svg) — via installer or [vcpkg](https://github.com/microsoft/vcpkg)
+- `ffmpeg.exe` / `ffprobe.exe` on `PATH` or beside `Trimmi.exe` ([gyan.dev](https://www.gyan.dev/ffmpeg/builds/) essentials)
 
 ## Build
 
+With system Qt (fast — same approach as CI):
+
 ```powershell
-git clone https://github.com/microsoft/vcpkg C:\vcpkg
-C:\vcpkg\bootstrap-vcpkg.bat
-
-cd D:\C++\Trimmi
-cmake -B build -G "Visual Studio 17 2022" -A x64 `
-  -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake `
-  -DVCPKG_TARGET_TRIPLET=x64-windows
-
+cmake -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
 ```
 
-First configure builds Qt 6 + FFmpeg via `vcpkg.json` (slow). Output: `build\Release\Trimmi.exe`.
+Or via vcpkg (`vcpkg.json` pulls Qt only; first configure is slow):
 
-For a prebuilt FFmpeg instead of the vcpkg port, download a full build ([gyan.dev](https://www.gyan.dev/ffmpeg/builds/) or BtbN), set `FFMPEG_DIR` (with `include/` and `lib/`), and copy `ffmpeg.exe` / `ffprobe.exe` next to `Trimmi.exe`.
+```powershell
+cmake -B build -G "Visual Studio 17 2022" -A x64 `
+  -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake `
+  -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake --build build --config Release
+```
+
+Output: `build\Release\Trimmi.exe`.
 
 ## Usage
 

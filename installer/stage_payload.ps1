@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
   Stage a self-contained Trimmi payload under dist\payload for the Inno installer.
-  Bundles: Trimmi.exe, Qt runtime + plugins, MSVC CRT, FFmpeg libs, ffmpeg/ffprobe tools.
+  Bundles: Trimmi.exe, Qt runtime + plugins, MSVC CRT, ffmpeg/ffprobe tools.
 #>
 param(
     [string]$Configuration = "Release",
@@ -48,6 +48,7 @@ foreach ($dir in @("platforms", "styles", "imageformats", "multimedia", "tls", "
 function Find-WinDeployQt {
     $candidates = @()
     if ($env:QTDIR) { $candidates += (Join-Path $env:QTDIR "bin\windeployqt.exe") }
+    if ($env:QT_ROOT_DIR) { $candidates += (Join-Path $env:QT_ROOT_DIR "bin\windeployqt.exe") }
     $vcpkgInstalled = Join-Path $root "vcpkg_installed\x64-windows\tools\Qt6\bin\windeployqt.exe"
     $candidates += $vcpkgInstalled
     $candidates += (Join-Path $BuildDir "..\vcpkg_installed\x64-windows\tools\Qt6\bin\windeployqt.exe")
@@ -65,6 +66,7 @@ function Find-WinDeployQt {
             $qtDir = $line.Matches.Groups[1].Value
             $candidates += (Join-Path $qtDir "..\..\..\tools\Qt6\bin\windeployqt.exe")
             $candidates += (Join-Path $qtDir "..\..\..\bin\windeployqt.exe")
+            $candidates += (Join-Path $qtDir "..\..\..\..\bin\windeployqt.exe")
         }
     }
 
@@ -90,47 +92,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "windeployqt failed with exit code $LASTEXITCODE"
 }
 
-# 3) Copy FFmpeg shared libraries (linked by Trimmi) from vcpkg / build tree
-function Get-FfmpegLibDirs {
-    $dirs = @()
-    $dirs += (Join-Path $root "vcpkg_installed\x64-windows\bin")
-    $dirs += (Join-Path $root "build\vcpkg_installed\x64-windows\bin")
-    if ($env:VCPKG_ROOT) {
-        $dirs += (Join-Path $env:VCPKG_ROOT "installed\x64-windows\bin")
-    }
-    if ($env:FFMPEG_DIR) {
-        $dirs += (Join-Path $env:FFMPEG_DIR "bin")
-    }
-    $dirs += $BuildDir
-    return $dirs | Where-Object { Test-Path $_ } | Select-Object -Unique
-}
-
-$ffmpegDllPatterns = @(
-    "avcodec*.dll", "avformat*.dll", "avutil*.dll", "avdevice*.dll", "avfilter*.dll",
-    "swscale*.dll", "swresample*.dll", "postproc*.dll",
-    "libx264*.dll", "libx265*.dll", "x264*.dll", "x265*.dll",
-    "SvtAv1Enc*.dll", "aom*.dll", "libaom*.dll",
-    "opus*.dll", "libopus*.dll", "vorbis*.dll", "ogg*.dll", "vpx*.dll",
-    "zlib*.dll", "libzlib*.dll", "bz2*.dll", "libbz2*.dll",
-    "libpng*.dll", "brotli*.dll", "lcms*.dll", "openh264*.dll"
-)
-
-$libDirs = @(Get-FfmpegLibDirs)
-Write-Host "    FFmpeg lib search paths:"
-$libDirs | ForEach-Object { Write-Host "      - $_" }
-
-foreach ($dir in $libDirs) {
-    foreach ($pattern in $ffmpegDllPatterns) {
-        Get-ChildItem -Path $dir -Filter $pattern -ErrorAction SilentlyContinue | ForEach-Object {
-            $dest = Join-Path $payload $_.Name
-            if (-not (Test-Path $dest)) {
-                Copy-Item -Force $_.FullName $dest
-            }
-        }
-    }
-}
-
-# 4) Bundle ffmpeg.exe / ffprobe.exe (prefer static full builds so export has NVENC/SVT-AV1)
+# 3) Bundle ffmpeg.exe / ffprobe.exe (prefer static full builds so export has NVENC/SVT-AV1)
 function Find-LocalTool([string]$name) {
     $candidates = @(
         (Join-Path $BuildDir "$name.exe"),
@@ -186,7 +148,7 @@ Copy-Item -Force $ffprobeExe (Join-Path $payload "ffprobe.exe")
 Write-Host "    Bundled ffmpeg : $ffmpegExe"
 Write-Host "    Bundled ffprobe: $ffprobeExe"
 
-# 5) Sanity checks
+# 4) Sanity checks
 $required = @(
     $exeName,
     "ffmpeg.exe",
@@ -196,10 +158,6 @@ $required = @(
 $missing = @()
 foreach ($rel in $required) {
     if (-not (Test-Path (Join-Path $payload $rel))) { $missing += $rel }
-}
-# At least one avcodec DLL for linked libav
-if (-not (Get-ChildItem $payload -Filter "avcodec*.dll" -ErrorAction SilentlyContinue)) {
-    $missing += "avcodec*.dll (FFmpeg shared library)"
 }
 if ($missing.Count -gt 0) {
     Write-Error ("Payload incomplete. Missing:`n  - " + ($missing -join "`n  - "))

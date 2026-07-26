@@ -20,28 +20,17 @@ concurrency:
 permissions:
   contents: write
 
-env:
-  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-  VCPKG_DEFAULT_TRIPLET: x64-windows
-
 jobs:
   release:
     name: Build installer & publish
     runs-on: windows-latest
-    timeout-minutes: 360
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-
-      - name: Export GitHub Actions cache variables for vcpkg
-        uses: actions/github-script@v8
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Read release version
         id: version
@@ -64,22 +53,44 @@ jobs:
             throw "Tag $tag already exists. Bump VERSION on main before releasing again."
           }
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
         with:
-          vcpkgJsonGlob: vcpkg.json
-          vcpkgGitCommitId: 40f3c709db80acf154ac4b17a1f83c564ebd022e
+          version: "6.8.3"
+          arch: win64_msvc2022_64
+          modules: qtmultimedia
+          archives: qtbase qtsvg qttools
+          cache: true
+
+      - name: Download FFmpeg tools
+        shell: pwsh
+        run: |
+          $toolsDir = Join-Path $env:GITHUB_WORKSPACE "tools\ffmpeg"
+          New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
+          $zip = Join-Path $toolsDir "ffmpeg-release-essentials.zip"
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" `
+            -OutFile $zip -UseBasicParsing
+          Expand-Archive -Path $zip -DestinationPath $toolsDir -Force
+          $bin = Get-ChildItem -Path $toolsDir -Recurse -Filter "ffmpeg.exe" |
+            Where-Object { $_.DirectoryName -match '\\bin$' } |
+            Select-Object -First 1
+          if (-not $bin) { throw "ffmpeg.exe not found after download" }
+          $binDir = $bin.DirectoryName
+          "FFMPEG_BIN=$binDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "FFmpeg tools: $binDir"
+          & (Join-Path $binDir "ffmpeg.exe") -version | Select-Object -First 1
 
       - name: Configure CMake
         shell: pwsh
         run: |
-          cmake -B build -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows
+          $env:Path = "$env:FFMPEG_BIN;$env:Path"
+          cmake -B build -G "Visual Studio 17 2022" -A x64
 
       - name: Build Trimmi
         shell: pwsh
-        run: cmake --build build --config Release --parallel
+        run: |
+          $env:Path = "$env:FFMPEG_BIN;$env:Path"
+          cmake --build build --config Release --parallel
 
       - name: Locate Release output directory
         id: outdir
@@ -112,6 +123,7 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.version }}"
           $buildDir = "${{ steps.outdir.outputs.dir }}"
+          $env:Path = "$env:FFMPEG_BIN;$env:Path"
           & .\installer\stage_payload.ps1 -Configuration Release -BuildDir $buildDir
           & .\installer\build_installer.ps1 -Configuration Release -Version $version -SkipStage
           $setup = Join-Path "dist" "TrimmiSetup-$version.exe"

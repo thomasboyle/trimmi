@@ -6,7 +6,6 @@
   "dependencies": [
     "qtbase",
     "qtmultimedia",
-    "qtsvg",
-    "ffmpeg"
+    "qtsvg"
   ]
 }

@@ -11,12 +11,6 @@
 #include <QUrl>
 #include <QVideoWidget>
 
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/avutil.h>
-}
-
 VideoPlayer::VideoPlayer(QObject* parent)
     : QObject(parent)
 {
@@ -65,75 +59,44 @@ VideoMetadata VideoPlayer::probeMetadata(const QString& path)
     meta.path = path;
     meta.fileName = QFileInfo(path).fileName();
 
-    AVFormatContext* fmt = nullptr;
-    const QByteArray pathUtf8 = path.toUtf8();
-    if (avformat_open_input(&fmt, pathUtf8.constData(), nullptr, nullptr) < 0) {
-        // Fallback: ffprobe JSON
-        const QString ffprobe = EncoderCapabilities::findFfprobeExecutable();
-        if (ffprobe.isEmpty())
-            return meta;
+    const QString ffprobe = EncoderCapabilities::findFfprobeExecutable();
+    if (ffprobe.isEmpty())
+        return meta;
 
-        QProcess proc;
-        proc.start(ffprobe,
-                   {QStringLiteral("-v"), QStringLiteral("quiet"), QStringLiteral("-print_format"),
-                    QStringLiteral("json"), QStringLiteral("-show_format"),
-                    QStringLiteral("-show_streams"), path});
-        if (!proc.waitForFinished(20000)) {
-            proc.kill();
-            return meta;
-        }
-        const auto doc = QJsonDocument::fromJson(proc.readAllStandardOutput());
-        const QJsonObject root = doc.object();
-        const double durSec = root.value(QStringLiteral("format"))
-                                  .toObject()
-                                  .value(QStringLiteral("duration"))
-                                  .toString()
-                                  .toDouble();
-        meta.durationMs = static_cast<qint64>(durSec * 1000.0);
-        for (const auto& streamVal : root.value(QStringLiteral("streams")).toArray()) {
-            const QJsonObject s = streamVal.toObject();
-            if (s.value(QStringLiteral("codec_type")).toString() == QLatin1String("video")
-                && meta.width == 0) {
-                meta.width = s.value(QStringLiteral("width")).toInt();
-                meta.height = s.value(QStringLiteral("height")).toInt();
-                meta.videoCodec = s.value(QStringLiteral("codec_name")).toString();
-                const QString rate = s.value(QStringLiteral("avg_frame_rate")).toString();
-                const auto parts = rate.split(QLatin1Char('/'));
-                if (parts.size() == 2 && parts[1].toDouble() > 0)
-                    meta.frameRate = parts[0].toDouble() / parts[1].toDouble();
-            } else if (s.value(QStringLiteral("codec_type")).toString() == QLatin1String("audio")
-                       && meta.audioCodec.isEmpty()) {
-                meta.audioCodec = s.value(QStringLiteral("codec_name")).toString();
-            }
-        }
-        meta.valid = meta.durationMs > 0 || (meta.width > 0 && meta.height > 0);
+    QProcess proc;
+    proc.start(ffprobe,
+               {QStringLiteral("-v"), QStringLiteral("quiet"), QStringLiteral("-print_format"),
+                QStringLiteral("json"), QStringLiteral("-show_format"),
+                QStringLiteral("-show_streams"), path});
+    if (!proc.waitForFinished(20000)) {
+        proc.kill();
         return meta;
     }
 
-    avformat_find_stream_info(fmt, nullptr);
-    if (fmt->duration > 0)
-        meta.durationMs = fmt->duration / (AV_TIME_BASE / 1000);
-
-    for (unsigned i = 0; i < fmt->nb_streams; ++i) {
-        AVStream* st = fmt->streams[i];
-        if (!st || !st->codecpar)
-            continue;
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && meta.width == 0) {
-            meta.width = st->codecpar->width;
-            meta.height = st->codecpar->height;
-            if (const AVCodec* c = avcodec_find_decoder(st->codecpar->codec_id))
-                meta.videoCodec = QString::fromUtf8(c->name);
-            if (st->avg_frame_rate.den > 0)
-                meta.frameRate = av_q2d(st->avg_frame_rate);
-            else if (st->r_frame_rate.den > 0)
-                meta.frameRate = av_q2d(st->r_frame_rate);
-        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && meta.audioCodec.isEmpty()) {
-            if (const AVCodec* c = avcodec_find_decoder(st->codecpar->codec_id))
-                meta.audioCodec = QString::fromUtf8(c->name);
+    const auto doc = QJsonDocument::fromJson(proc.readAllStandardOutput());
+    const QJsonObject root = doc.object();
+    const double durSec = root.value(QStringLiteral("format"))
+                              .toObject()
+                              .value(QStringLiteral("duration"))
+                              .toString()
+                              .toDouble();
+    meta.durationMs = static_cast<qint64>(durSec * 1000.0);
+    for (const auto& streamVal : root.value(QStringLiteral("streams")).toArray()) {
+        const QJsonObject s = streamVal.toObject();
+        if (s.value(QStringLiteral("codec_type")).toString() == QLatin1String("video")
+            && meta.width == 0) {
+            meta.width = s.value(QStringLiteral("width")).toInt();
+            meta.height = s.value(QStringLiteral("height")).toInt();
+            meta.videoCodec = s.value(QStringLiteral("codec_name")).toString();
+            const QString rate = s.value(QStringLiteral("avg_frame_rate")).toString();
+            const auto parts = rate.split(QLatin1Char('/'));
+            if (parts.size() == 2 && parts[1].toDouble() > 0)
+                meta.frameRate = parts[0].toDouble() / parts[1].toDouble();
+        } else if (s.value(QStringLiteral("codec_type")).toString() == QLatin1String("audio")
+                   && meta.audioCodec.isEmpty()) {
+            meta.audioCodec = s.value(QStringLiteral("codec_name")).toString();
         }
     }
-
-    avformat_close_input(&fmt);
     meta.valid = meta.durationMs > 0 || (meta.width > 0 && meta.height > 0);
     return meta;
 }
