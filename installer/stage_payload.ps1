@@ -115,24 +115,31 @@ $ffmpegExe = Find-LocalTool "ffmpeg"
 $ffprobeExe = Find-LocalTool "ffprobe"
 
 if ((-not $ffmpegExe -or -not $ffprobeExe) -and -not $SkipFfmpegDownload) {
-    Write-Host "    Downloading standalone FFmpeg full (static)…"
+    Write-Host "    Downloading standalone FFmpeg (static)…"
     $toolsDir = Join-Path $root "tools\ffmpeg"
     New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
-    $zip = Join-Path $toolsDir "ffmpeg-release-full.zip"
-    $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.zip"
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
-        Expand-Archive -Path $zip -DestinationPath $toolsDir -Force
-        $extractedBin = Get-ChildItem -Path $toolsDir -Recurse -Filter "ffmpeg.exe" |
-            Where-Object { $_.DirectoryName -match '\\bin$' } |
-            Select-Object -First 1
-        if ($extractedBin) {
-            $binDir = $extractedBin.DirectoryName
-            if (-not $ffmpegExe) { $ffmpegExe = Join-Path $binDir "ffmpeg.exe" }
-            if (-not $ffprobeExe) { $ffprobeExe = Join-Path $binDir "ffprobe.exe" }
+    $zip = Join-Path $toolsDir "ffmpeg-win64-gpl.zip"
+    $urls = @(
+        "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+        "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+    )
+    foreach ($url in $urls) {
+        try {
+            Write-Host "    Trying $url"
+            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+            Expand-Archive -Path $zip -DestinationPath $toolsDir -Force
+            $extractedBin = Get-ChildItem -Path $toolsDir -Recurse -Filter "ffmpeg.exe" |
+                Where-Object { $_.DirectoryName -match '[\\/]bin$' } |
+                Select-Object -First 1
+            if ($extractedBin) {
+                $binDir = $extractedBin.DirectoryName
+                if (-not $ffmpegExe) { $ffmpegExe = Join-Path $binDir "ffmpeg.exe" }
+                if (-not $ffprobeExe) { $ffprobeExe = Join-Path $binDir "ffprobe.exe" }
+                break
+            }
+        } catch {
+            Write-Warning "FFmpeg download failed: $($_.Exception.Message)"
         }
-    } catch {
-        Write-Warning "FFmpeg download failed: $($_.Exception.Message)"
     }
 }
 

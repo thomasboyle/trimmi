@@ -76,12 +76,26 @@ jobs:
         run: |
           $toolsDir = Join-Path $env:GITHUB_WORKSPACE "tools\ffmpeg"
           New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
-          $zip = Join-Path $toolsDir "ffmpeg-release-full.zip"
-          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.zip" `
-            -OutFile $zip -UseBasicParsing
+          $zip = Join-Path $toolsDir "ffmpeg-win64-gpl.zip"
+          $urls = @(
+            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          )
+          $downloaded = $false
+          foreach ($url in $urls) {
+            try {
+              Write-Host "Downloading $url"
+              Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+              $downloaded = $true
+              break
+            } catch {
+              Write-Warning "Download failed: $($_.Exception.Message)"
+            }
+          }
+          if (-not $downloaded) { throw "Could not download FFmpeg from any mirror" }
           Expand-Archive -Path $zip -DestinationPath $toolsDir -Force
           $bin = Get-ChildItem -Path $toolsDir -Recurse -Filter "ffmpeg.exe" |
-            Where-Object { $_.DirectoryName -match '\\bin$' } |
+            Where-Object { $_.DirectoryName -match '[\\/]bin$' } |
             Select-Object -First 1
           if (-not $bin) { throw "ffmpeg.exe not found after download" }
           $binDir = $bin.DirectoryName

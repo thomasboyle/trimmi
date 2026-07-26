@@ -7,7 +7,7 @@ Portable Windows video trimmer (C++ / Qt 6): drag-and-drop, live preview, filmst
 - Windows 10/11 x64
 - Visual Studio 2026 (MSVC) + CMake 4.2+ (VS 2022 also works locally)
 - Qt 6.12+ (Widgets, Multimedia, Svg) — via installer or [vcpkg](https://github.com/microsoft/vcpkg)
-- `ffmpeg.exe` / `ffprobe.exe` on `PATH` or beside `Trimmi.exe` ([gyan.dev](https://www.gyan.dev/ffmpeg/builds/) full)
+- `ffmpeg.exe` / `ffprobe.exe` on `PATH` or beside `Trimmi.exe` ([BtbN](https://github.com/BtbN/FFmpeg-Builds/releases) or [gyan.dev](https://www.gyan.dev/ffmpeg/builds/))
 
 ## Build
 
