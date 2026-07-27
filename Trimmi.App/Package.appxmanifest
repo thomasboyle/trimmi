@@ -10,7 +10,7 @@
   <Identity
     Name="DC22D471-C731-4C3D-8ACF-B7FBD9634BB0"
     Publisher="CN=Trimmi Dev"
-    Version="1.0.9.0" />
+    Version="1.0.10.0" />
 
   <mp:PhoneIdentity PhoneProductId="DC22D471-C731-4C3D-8ACF-B7FBD9634BB0" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
@@ -21,8 +21,8 @@
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="1.0.9.0" MaxVersionTested="10.0.26226.0" />
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="1.0.9.0" MaxVersionTested="10.0.26226.0" />
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="1.0.10.0" MaxVersionTested="10.0.26226.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="1.0.10.0" MaxVersionTested="10.0.26226.0" />
   </Dependencies>
 
   <Resources>
