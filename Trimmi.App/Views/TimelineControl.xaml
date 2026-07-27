@@ -8,7 +8,7 @@
     MinHeight="96"
     mc:Ignorable="d">
 
-    <Grid x:Name="RootGrid" Padding="12,0">
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="22" />
             <RowDefinition Height="56" />
@@ -18,12 +18,14 @@
         <Canvas
             x:Name="RulerCanvas"
             Grid.Row="0"
+            Margin="12,0,12,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch" />
 
         <Grid Grid.Row="1">
             <Grid
                 x:Name="FilmstripHost"
+                Margin="12,0,12,0"
                 Background="#2A2924"
                 CornerRadius="10"
                 BorderBrush="#FF6B744F"
@@ -78,7 +80,7 @@
                     IsHitTestVisible="False" />
             </Grid>
 
-            <!-- Thumbs live outside the rounded filmstrip so they can center on the edges. -->
+            <!-- Full-width layer so edge-centered thumbs are not clipped. -->
             <Border
                 x:Name="StartThumb"
                 Width="18"
@@ -131,6 +133,7 @@
         <Canvas
             x:Name="HandleLabelCanvas"
             Grid.Row="2"
+            Margin="12,0,12,0"
             HorizontalAlignment="Stretch"
             IsHitTestVisible="False" />
     </Grid>

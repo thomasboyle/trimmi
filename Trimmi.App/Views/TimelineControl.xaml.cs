@@ -200,17 +200,19 @@ public sealed partial class TimelineControl : UserControl
         RefreshThumbnailWidths();
     }
 
+    private const double TrackInset = 12;
+    private const double ThumbHalf = 9;
+    private const double ThumbWidth = ThumbHalf * 2;
+
     private void PlaceThumbs(double startX, double endX, double width)
     {
-        const double thumbHalf = 9;
-        const double thumbWidth = thumbHalf * 2;
-        // Center thumbs on the cut; allow overhang past the track so edge times have no inset gap.
-        var startThumbX = startX - thumbHalf;
-        var endThumbX = endX - thumbHalf;
-        if (Math.Abs(endThumbX - startThumbX) < thumbWidth)
+        // Thumbs sit in a full-width overlay; filmstrip is inset by TrackInset.
+        var startThumbX = TrackInset + startX - ThumbHalf;
+        var endThumbX = TrackInset + endX - ThumbHalf;
+        if (Math.Abs(endThumbX - startThumbX) < ThumbWidth)
         {
-            startThumbX = -thumbHalf;
-            endThumbX = width - thumbHalf;
+            startThumbX = TrackInset - ThumbHalf;
+            endThumbX = TrackInset + width - ThumbHalf;
         }
 
         StartThumb.Margin = new Thickness(startThumbX, -4, 0, -4);
