@@ -1,6 +1,6 @@
 #define MyAppName "Trimmi"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.15"
+  #define MyAppVersion "1.0.16"
 #endif
 #define MyAppPublisher "Trimmi"
 #define MyAppExeName "Trimmi.App.exe"
