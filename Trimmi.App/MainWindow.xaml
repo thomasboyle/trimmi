@@ -206,6 +206,23 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
+
+                            <Border Height="8" />
+
+                            <Button
+                                x:Name="SettingsButton"
+                                HorizontalAlignment="Stretch"
+                                Click="SettingsButton_Click"
+                                Style="{StaticResource GlassSecondaryButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Image
+                                        Width="16"
+                                        Height="16"
+                                        Source="{StaticResource NavSettingsBitmap}"
+                                        Stretch="Uniform" />
+                                    <TextBlock Style="{StaticResource BodyTextStyle}" Text="Settings" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </ScrollViewer>
                 </controls:GlassPanel.PanelContent>
@@ -461,15 +478,118 @@
                             </StackPanel>
                         </Grid>
 
-                        <Button
-                            x:Name="ExportButton"
-                            Grid.Row="5"
-                            MinWidth="180"
-                            HorizontalAlignment="Right"
-                            Click="ExportButton_Click"
-                            Content="Trim &amp; Export"
-                            Style="{StaticResource GlassPrimaryButtonStyle}" />
+                        <Grid Grid.Row="5" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel
+                                x:Name="ExportProgressPanel"
+                                VerticalAlignment="Center"
+                                Spacing="6"
+                                Visibility="Collapsed">
+                                <TextBlock
+                                    x:Name="ExportProgressStatus"
+                                    Style="{StaticResource BodyTextStyle}"
+                                    Text="Exporting…"
+                                    TextWrapping="WrapWholeWords" />
+                                <ProgressBar
+                                    x:Name="ExportProgressBar"
+                                    Height="8"
+                                    Maximum="100"
+                                    Minimum="0"
+                                    Value="0" />
+                            </StackPanel>
+
+                            <StackPanel
+                                Grid.Column="1"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                                <Button
+                                    x:Name="CancelExportButton"
+                                    MinWidth="100"
+                                    Click="CancelExportButton_Click"
+                                    Content="Cancel"
+                                    Style="{StaticResource GlassSecondaryButtonStyle}"
+                                    Visibility="Collapsed" />
+                                <Button
+                                    x:Name="ExportButton"
+                                    MinWidth="180"
+                                    Click="ExportButton_Click"
+                                    Content="Trim &amp; Export"
+                                    Style="{StaticResource GlassPrimaryButtonStyle}" />
+                            </StackPanel>
+                        </Grid>
                     </Grid>
+                </controls:GlassPanel.PanelContent>
+            </controls:GlassPanel>
+        </Grid>
+
+        <!-- Settings overlay (same window, not a dialog) -->
+        <Grid
+            x:Name="SettingsOverlay"
+            Grid.RowSpan="2"
+            Visibility="Collapsed">
+            <Border Background="#99000000" Tapped="SettingsOverlay_Tapped" />
+            <controls:GlassPanel
+                Width="420"
+                MaxHeight="520"
+                Margin="24"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+                <controls:GlassPanel.PanelContent>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16">
+                            <Grid>
+                                <TextBlock Style="{StaticResource TitleTextStyle}" Text="Settings" />
+                                <Button
+                                    Width="32"
+                                    Height="32"
+                                    Padding="0"
+                                    HorizontalAlignment="Right"
+                                    Click="SettingsCloseButton_Click"
+                                    Style="{StaticResource GlassIconButtonStyle}"
+                                    ToolTipService.ToolTip="Close">
+                                    <FontIcon
+                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                        FontSize="12"
+                                        Glyph="&#xE711;" />
+                                </Button>
+                            </Grid>
+
+                            <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="Sounds" />
+
+                            <ToggleSwitch
+                                x:Name="UiSoundsToggle"
+                                Style="{StaticResource GlassToggleSwitchStyle}"
+                                Toggled="UiSoundsToggle_Toggled">
+                                <ToggleSwitch.Header>
+                                    <TextBlock Style="{StaticResource BodyTextStyle}" Text="UI interaction sounds" />
+                                </ToggleSwitch.Header>
+                            </ToggleSwitch>
+
+                            <StackPanel Spacing="8">
+                                <TextBlock Style="{StaticResource GlassFieldLabelStyle}" Text="UI sound volume" />
+                                <Slider
+                                    x:Name="UiSoundVolumeSlider"
+                                    Maximum="100"
+                                    Minimum="0"
+                                    StepFrequency="1"
+                                    Style="{StaticResource GlassSliderStyle}"
+                                    ValueChanged="UiSoundVolumeSlider_ValueChanged" />
+                                <TextBlock x:Name="UiSoundVolumeLabel" Style="{StaticResource CaptionTextStyle}" />
+                            </StackPanel>
+
+                            <Button
+                                MinWidth="120"
+                                HorizontalAlignment="Left"
+                                Click="SettingsDoneButton_Click"
+                                Content="Done"
+                                Style="{StaticResource GlassPrimaryButtonStyle}" />
+                        </StackPanel>
+                    </ScrollViewer>
                 </controls:GlassPanel.PanelContent>
             </controls:GlassPanel>
         </Grid>

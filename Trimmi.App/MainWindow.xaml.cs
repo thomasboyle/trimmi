@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Trimmi.Core.Models;
 using Trimmi.Core.Services;
+using Trimmi_App.Services.UiSounds;
 using Trimmi_App.Views;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Media.Core;
@@ -41,6 +42,7 @@ public sealed partial class MainWindow : Window
     private readonly UpdateService _updates = new();
     private readonly MediaPlayer _mediaPlayer = new();
     private readonly ObservableCollection<BitmapImage> _timelineThumbs = [];
+    private readonly AppSettings _settings;
 
     private VideoMetadata? _metadata;
     private AppUpdateInfo? _pendingUpdate;
@@ -50,12 +52,14 @@ public sealed partial class MainWindow : Window
     private bool _updatingFields;
     private bool _dropZoneHovered;
     private bool _fullscreen;
-    private ContentDialog? _progressDialog;
-    private ProgressBar? _progressBar;
-    private TextBlock? _progressStatus;
+    private bool _exporting;
+    private bool _suppressToggleSound;
+    private bool _suppressVolumePreview;
+    private bool _settingsFormLoaded;
 
     public MainWindow()
     {
+        _settings = App.SettingsStore.Load();
         InitializeComponent();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -90,6 +94,7 @@ public sealed partial class MainWindow : Window
             root.Loaded -= MainWindow_Loaded;
         }
 
+        UiSoundService.Warmup();
         _ = DetectEncodersAsync();
         _ = CheckForUpdatesAsync();
         TryLoadCliArgument();
@@ -120,6 +125,7 @@ public sealed partial class MainWindow : Window
 
     private void UpdateDismissButton_Click(object sender, RoutedEventArgs e)
     {
+        UiSoundService.Play(UiSoundName.Release);
         _updateCts?.Cancel();
         UpdateBanner.Visibility = Visibility.Collapsed;
         _pendingUpdate = null;
@@ -130,6 +136,7 @@ public sealed partial class MainWindow : Window
         if (_pendingUpdate is null)
             return;
 
+        UiSoundService.Play(UiSoundName.Press);
         _updateCts?.Cancel();
         _updateCts = new CancellationTokenSource();
         var token = _updateCts.Token;
@@ -171,6 +178,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            UiSoundService.Play(UiSoundName.Error);
             UpdateProgressBar.Visibility = Visibility.Collapsed;
             UpdateNowButton.IsEnabled = true;
             UpdateLaterButton.IsEnabled = true;
@@ -247,11 +255,25 @@ public sealed partial class MainWindow : Window
         UpdateGpuBadge();
     }
 
-    private void EncoderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        UpdateGpuBadge();
+    private void EncoderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count > 0 && e.RemovedItems.Count > 0)
+        {
+            UiSoundService.Play(UiSoundName.Press);
+        }
 
-    private void FormatCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        UpdateGpuBadge();
+    }
+
+    private void FormatCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count > 0 && e.RemovedItems.Count > 0)
+        {
+            UiSoundService.Play(UiSoundName.Press);
+        }
+
         UpdateFormatHelper();
+    }
 
     private void UpdateGpuBadge()
     {
@@ -305,11 +327,17 @@ public sealed partial class MainWindow : Window
         return !string.IsNullOrEmpty(ext) && VideoExtensions.Contains(ext);
     }
 
-    private async void SelectFileButton_Click(object sender, RoutedEventArgs e) =>
+    private async void SelectFileButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Press);
         await PickSourceFileAsync();
+    }
 
-    private async void DropZone_Tapped(object sender, TappedRoutedEventArgs e) =>
+    private async void DropZone_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Press);
         await PickSourceFileAsync();
+    }
 
     private async Task PickSourceFileAsync()
     {
@@ -385,6 +413,7 @@ public sealed partial class MainWindow : Window
             var meta = await _probe.ProbeAsync(path).ConfigureAwait(true);
             if (!meta.Valid)
             {
+                UiSoundService.Play(UiSoundName.Error);
                 await ShowMessageAsync("Could not read video metadata.");
                 return;
             }
@@ -401,11 +430,13 @@ public sealed partial class MainWindow : Window
             _mediaPlayer.Source = MediaSource.CreateFromUri(new Uri(path));
             _mediaPlayer.PlaybackSession.Position = TimeSpan.Zero;
 
+            UiSoundService.Play(UiSoundName.Ready);
             _ = GenerateThumbnailsAsync(meta);
         }
         catch (Exception ex)
         {
             SetControlsEnabled(false);
+            UiSoundService.Play(UiSoundName.Error);
             await ShowMessageAsync(ex.Message);
         }
     }
@@ -449,19 +480,62 @@ public sealed partial class MainWindow : Window
 
     private void SetControlsEnabled(bool enabled)
     {
+        if (_exporting)
+        {
+            enabled = false;
+        }
+
         PlayPauseButton.IsEnabled = enabled;
-        ExportButton.IsEnabled = enabled;
+        ExportButton.IsEnabled = enabled && !_exporting;
         VolumeSlider.IsEnabled = enabled;
         Timeline.IsEnabled = enabled;
         StartEdit.IsEnabled = enabled;
         EndEdit.IsEnabled = enabled;
+        SelectFileButton.IsEnabled = !_exporting;
+        DropZoneHitTarget.IsHitTestVisible = !_exporting;
+        EncoderCombo.IsEnabled = !_exporting;
+        FormatCombo.IsEnabled = !_exporting;
     }
 
-    private void PlayPauseButton_Click(object sender, RoutedEventArgs e) => TogglePlayPause();
+    private void SetExportUi(bool exporting)
+    {
+        _exporting = exporting;
+        ExportProgressPanel.Visibility = exporting ? Visibility.Visible : Visibility.Collapsed;
+        CancelExportButton.Visibility = exporting ? Visibility.Visible : Visibility.Collapsed;
+        ExportButton.Visibility = exporting ? Visibility.Collapsed : Visibility.Visible;
 
-    private void PrevFrameButton_Click(object sender, RoutedEventArgs e) => StepFrame(-1);
+        if (!exporting)
+        {
+            ExportProgressBar.Value = 0;
+            ExportProgressStatus.Text = "Exporting…";
+        }
 
-    private void NextFrameButton_Click(object sender, RoutedEventArgs e) => StepFrame(1);
+        SetControlsEnabled(_metadata is not null);
+    }
+
+    private void CancelExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Droplet);
+        _exportCts?.Cancel();
+    }
+
+    private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Press);
+        TogglePlayPause();
+    }
+
+    private void PrevFrameButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Tick);
+        StepFrame(-1);
+    }
+
+    private void NextFrameButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Tick);
+        StepFrame(1);
+    }
 
     private void JumpEndButton_Click(object sender, RoutedEventArgs e)
     {
@@ -470,6 +544,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        UiSoundService.Play(UiSoundName.Press);
         SeekTo(Math.Max(Timeline.StartMs, Timeline.EndMs > 0 ? Timeline.EndMs - 1 : 0));
     }
 
@@ -492,15 +567,30 @@ public sealed partial class MainWindow : Window
         _mediaPlayer.Volume = e.NewValue / 100.0;
     }
 
-    private void FullscreenButton_Click(object sender, RoutedEventArgs e) => ToggleFullscreen();
+    private void FullscreenButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Press);
+        ToggleFullscreen();
+    }
 
     private void Root_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == Windows.System.VirtualKey.Escape && _fullscreen)
+        if (e.Key == Windows.System.VirtualKey.Escape)
         {
-            ToggleFullscreen();
-            e.Handled = true;
-            return;
+            if (SettingsOverlay.Visibility == Visibility.Visible)
+            {
+                UiSoundService.Play(UiSoundName.Droplet);
+                CloseSettings(save: true);
+                e.Handled = true;
+                return;
+            }
+
+            if (_fullscreen)
+            {
+                ToggleFullscreen();
+                e.Handled = true;
+                return;
+            }
         }
 
         if (e.Key != Windows.System.VirtualKey.Space)
@@ -713,13 +803,14 @@ public sealed partial class MainWindow : Window
 
     private async void ExportButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_metadata is null)
+        if (_metadata is null || _exporting)
         {
             return;
         }
 
         if (Timeline.EndMs <= Timeline.StartMs)
         {
+            UiSoundService.Play(UiSoundName.Error);
             await ShowMessageAsync("End time must be greater than Start time.");
             return;
         }
@@ -728,10 +819,12 @@ public sealed partial class MainWindow : Window
         var encoder = SelectedEncoder();
         if (format is null || encoder is null)
         {
+            UiSoundService.Play(UiSoundName.Error);
             await ShowMessageAsync("Select an encoder and format first.");
             return;
         }
 
+        UiSoundService.Play(UiSoundName.Press);
         var picker = new FileSavePicker();
         InitializePicker(picker);
         picker.SuggestedStartLocation = PickerLocationId.VideosLibrary;
@@ -744,58 +837,32 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        ExportButton.IsEnabled = false;
         _exportCts?.Cancel();
         _exportCts = new CancellationTokenSource();
+        SetExportUi(true);
+        ExportProgressStatus.Text = "Starting export…";
+        ExportProgressBar.Value = 0;
+        UiSoundService.Play(UiSoundName.Loading);
 
-        _progressBar = new ProgressBar { Minimum = 0, Maximum = 100, Height = 8 };
-        _progressStatus = new TextBlock
+        var (ok, message) = await RunExportAsync(file.Path, encoder, format, _exportCts.Token)
+            .ConfigureAwait(true);
+
+        SetExportUi(false);
+
+        if (ok)
         {
-            Text = "Exporting...",
-            Style = (Style)Application.Current.Resources["BodyTextStyle"],
-            TextWrapping = TextWrapping.WrapWholeWords,
-        };
-        var panel = new StackPanel { Spacing = 12 };
-        panel.Children.Add(_progressStatus);
-        panel.Children.Add(_progressBar);
-
-        _progressDialog = new ContentDialog
+            UiSoundService.Play(UiSoundName.Success);
+            await ShowMessageAsync(message);
+        }
+        else if (message == "Export cancelled.")
         {
-            XamlRoot = Content.XamlRoot,
-            Title = "Trim & Export",
-            Content = panel,
-            CloseButtonText = "Cancel",
-            RequestedTheme = ElementTheme.Light,
-        };
-
-        var dialogTask = _progressDialog.ShowAsync().AsTask();
-        var exportTask = RunExportAsync(file.Path, encoder, format, _exportCts.Token);
-
-        var completed = await Task.WhenAny(dialogTask, exportTask).ConfigureAwait(true);
-        if (ReferenceEquals(completed, dialogTask))
-        {
-            _exportCts.Cancel();
-            try
-            {
-                await exportTask.ConfigureAwait(true);
-            }
-            catch
-            {
-                // Cancelled or failed after dismiss.
-            }
+            // Cancel already played Droplet.
         }
         else
         {
-            _progressDialog.Hide();
-            await dialogTask.ConfigureAwait(true);
-            var (ok, message) = await exportTask.ConfigureAwait(true);
-            await ShowMessageAsync(message, ok ? "Trimmi" : "Export failed");
+            UiSoundService.Play(UiSoundName.Error);
+            await ShowMessageAsync(message, "Export failed");
         }
-
-        ExportButton.IsEnabled = true;
-        _progressDialog = null;
-        _progressBar = null;
-        _progressStatus = null;
     }
 
     private async Task<(bool Ok, string Message)> RunExportAsync(
@@ -820,14 +887,10 @@ public sealed partial class MainWindow : Window
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    if (_progressBar is not null)
+                    ExportProgressBar.Value = Math.Clamp(p.Percent, 0, 100);
+                    if (!string.IsNullOrWhiteSpace(p.Status))
                     {
-                        _progressBar.Value = Math.Clamp(p.Percent, 0, 100);
-                    }
-
-                    if (_progressStatus is not null && !string.IsNullOrWhiteSpace(p.Status))
-                    {
-                        _progressStatus.Text = p.Status;
+                        ExportProgressStatus.Text = p.Status;
                     }
                 });
             });
@@ -843,6 +906,103 @@ public sealed partial class MainWindow : Window
         {
             return (false, ex.Message);
         }
+    }
+
+    private void SettingsOverlay_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Droplet);
+        CloseSettings(save: true);
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Page);
+        OpenSettings();
+    }
+
+    private void SettingsCloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Droplet);
+        CloseSettings(save: true);
+    }
+
+    private void SettingsDoneButton_Click(object sender, RoutedEventArgs e)
+    {
+        UiSoundService.Play(UiSoundName.Success);
+        CloseSettings(save: true);
+    }
+
+    private void OpenSettings()
+    {
+        if (!_settingsFormLoaded)
+        {
+            _settingsFormLoaded = true;
+            _suppressToggleSound = true;
+            _suppressVolumePreview = true;
+            UiSoundsToggle.IsOn = _settings.UiSoundsEnabled;
+            UiSoundVolumeSlider.Value = _settings.UiSoundVolume;
+            UiSoundVolumeLabel.Text = $"{_settings.UiSoundVolume}%";
+            _suppressToggleSound = false;
+            _suppressVolumePreview = false;
+        }
+
+        SettingsOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void CloseSettings(bool save)
+    {
+        if (save)
+        {
+            PersistSoundSettings();
+        }
+
+        SettingsOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void PersistSoundSettings()
+    {
+        _settings.UiSoundsEnabled = UiSoundsToggle.IsOn;
+        _settings.UiSoundVolume = (int)UiSoundVolumeSlider.Value;
+        UiSoundService.IsEnabled = _settings.UiSoundsEnabled;
+        UiSoundService.VolumePercent = _settings.UiSoundVolume;
+        App.SettingsStore.Save(_settings);
+    }
+
+    private void UiSoundsToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_suppressToggleSound || !_settingsFormLoaded)
+        {
+            return;
+        }
+
+        var enabled = UiSoundsToggle.IsOn;
+        UiSoundService.IsEnabled = true;
+        UiSoundService.Play(UiSoundName.Toggle);
+        UiSoundService.IsEnabled = enabled;
+        _settings.UiSoundsEnabled = enabled;
+    }
+
+    private void UiSoundVolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (!_settingsFormLoaded)
+        {
+            return;
+        }
+
+        var volume = (int)e.NewValue;
+        UiSoundVolumeLabel.Text = $"{volume}%";
+        UiSoundService.VolumePercent = volume;
+        _settings.UiSoundVolume = volume;
+
+        if (_suppressVolumePreview)
+        {
+            return;
+        }
+
+        var wasEnabled = UiSoundService.IsEnabled;
+        UiSoundService.IsEnabled = true;
+        UiSoundService.Play(UiSoundName.Tick);
+        UiSoundService.IsEnabled = wasEnabled;
     }
 
     private async Task ShowMessageAsync(string message, string title = "Trimmi")
