@@ -30,7 +30,11 @@
             x:Name="AppTitleBar"
             Height="40"
             Title="Trimmi"
-            Foreground="{ThemeResource AppInkBrush}" />
+            Foreground="{ThemeResource AppInkBrush}">
+            <TitleBar.IconSource>
+                <ImageIconSource ImageSource="ms-appx:///Assets/AppLogo.png" />
+            </TitleBar.IconSource>
+        </TitleBar>
 
         <Grid
             Grid.Row="1"
