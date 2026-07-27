@@ -239,7 +239,8 @@ public sealed partial class ExportService
             }
             else if (vEncoder == "libsvtav1")
             {
-                args.AddRange(["-crf", "28", "-preset", "6"]);
+                // Quality-matched vs old preset 6 / CRF 28 (VMAF ≥ baseline, ~3× wall-clock).
+                args.AddRange(["-crf", "20", "-preset", "10"]);
             }
             else if (vEncoder == "libaom-av1")
             {
