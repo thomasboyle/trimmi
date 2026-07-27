@@ -115,6 +115,18 @@
     <ProjectReference Include="..\Trimmi.Core\Trimmi.Core.csproj" />
   </ItemGroup>
 
+  <!-- WinUI/MSIX packaging can skip CopyToOutputDirectory for package visual assets. -->
+  <Target Name="CopyAppIconsToOutput" AfterTargets="CopyFilesToOutputDirectory">
+    <ItemGroup>
+      <_TrimmiAppIconFiles Include="$(MSBuildProjectDirectory)\Assets\AppIcon.ico" />
+      <_TrimmiAppIconFiles Include="$(MSBuildProjectDirectory)\Assets\AppLogo.png" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(_TrimmiAppIconFiles)"
+      DestinationFolder="$(OutDir)Assets"
+      SkipUnchangedFiles="true" />
+  </Target>
+
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
     Explorer "Package and Publish" context menu entry to be enabled for this project even if

@@ -64,7 +64,7 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1280, 820));
-        AppWindow.SetIcon("Assets/AppIcon.ico");
+        ApplyWindowIcon();
 
         SystemBackdrop = null;
         PreviewPlayer.SetMediaPlayer(_mediaPlayer);
@@ -94,10 +94,21 @@ public sealed partial class MainWindow : Window
             root.Loaded -= MainWindow_Loaded;
         }
 
+        ApplyWindowIcon();
         UiSoundService.Warmup();
         _ = DetectEncodersAsync();
         _ = CheckForUpdatesAsync();
         TryLoadCliArgument();
+    }
+
+    private void ApplyWindowIcon()
+    {
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+        if (!File.Exists(iconPath))
+            return;
+
+        AppWindow.SetIcon(iconPath);
+        AppWindow.SetTaskbarIcon(iconPath);
     }
 
     private async Task CheckForUpdatesAsync()
