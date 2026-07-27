@@ -48,7 +48,7 @@
                         <StackPanel Spacing="12">
                             <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="1. Select Video" />
 
-                            <Grid x:Name="DropZone" MinHeight="180">
+                            <Grid x:Name="DropZone" MinHeight="200" Padding="12,16">
                                 <Rectangle
                                     x:Name="DropZoneOutline"
                                     RadiusX="10"
@@ -72,45 +72,45 @@
                                 <StackPanel
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
-                                    Spacing="6"
-                                    IsHitTestVisible="False">
+                                    Spacing="8">
                                     <Image
-                                        Width="52"
-                                        Height="52"
+                                        Width="48"
+                                        Height="48"
+                                        IsHitTestVisible="False"
                                         Source="{StaticResource IconCameraAddBitmap}"
                                         Stretch="Uniform" />
                                     <TextBlock
                                         HorizontalAlignment="Center"
+                                        IsHitTestVisible="False"
                                         Foreground="{StaticResource ResultLabelBrush}"
                                         Style="{StaticResource BodyTextStyle}"
                                         Text="Drop a video file here" />
                                     <TextBlock
                                         HorizontalAlignment="Center"
+                                        IsHitTestVisible="False"
                                         Foreground="{StaticResource ResultLabelBrush}"
                                         Opacity="0.7"
                                         Style="{StaticResource CaptionTextStyle}"
                                         Text="or" />
+                                    <Button
+                                        x:Name="SelectFileButton"
+                                        HorizontalAlignment="Center"
+                                        Click="SelectFileButton_Click"
+                                        Style="{StaticResource GlassSecondaryButtonStyle}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Image
+                                                Width="16"
+                                                Height="16"
+                                                Source="{StaticResource IconFolderBitmap}"
+                                                Stretch="Uniform" />
+                                            <TextBlock Style="{StaticResource BodyTextStyle}" Text="Select File" />
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
-                                <Button
-                                    x:Name="SelectFileButton"
-                                    Margin="0,0,0,16"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Bottom"
-                                    Click="SelectFileButton_Click"
-                                    Style="{StaticResource GlassSecondaryButtonStyle}">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Image
-                                            Width="16"
-                                            Height="16"
-                                            Source="{StaticResource IconFolderBitmap}"
-                                            Stretch="Uniform" />
-                                        <TextBlock Style="{StaticResource BodyTextStyle}" Text="Select File" />
-                                    </StackPanel>
-                                </Button>
                                 <Image
-                                    Width="40"
-                                    Height="40"
-                                    Margin="0,0,18,52"
+                                    Width="36"
+                                    Height="36"
+                                    Margin="0,0,14,14"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom"
                                     IsHitTestVisible="False"

@@ -176,11 +176,22 @@ public sealed partial class TimelineControl : UserControl
         SelectionOverlay.Width = Math.Max(1, endX - startX);
 
         Playhead.Margin = new Thickness(playX - 1, -4, 0, -2);
-        StartThumb.Margin = new Thickness(startX - 7, -2, 0, -2);
-        EndThumb.Margin = new Thickness(endX - 7, -2, 0, -2);
+
+        const double thumbHalf = 9;
+        var startThumbX = Math.Clamp(startX - thumbHalf, 0, Math.Max(0, width - thumbHalf * 2));
+        var endThumbX = Math.Clamp(endX - thumbHalf, 0, Math.Max(0, width - thumbHalf * 2));
+        // Keep start/end distinct when range is full width
+        if (Math.Abs(endThumbX - startThumbX) < thumbHalf * 2)
+        {
+            startThumbX = 0;
+            endThumbX = Math.Max(0, width - thumbHalf * 2);
+        }
+
+        StartThumb.Margin = new Thickness(startThumbX, -4, 0, -4);
+        EndThumb.Margin = new Thickness(endThumbX, -4, 0, -4);
 
         BuildRuler();
-        BuildHandleLabels(startX, endX);
+        BuildHandleLabels(startX, endX, width);
         RefreshThumbnailWidths();
     }
 
@@ -245,24 +256,33 @@ public sealed partial class TimelineControl : UserControl
         }
     }
 
-    private void BuildHandleLabels(double startX, double endX)
+    private void BuildHandleLabels(double startX, double endX, double width)
     {
         HandleLabelCanvas.Children.Clear();
-        AddHandleLabel("Start", startX);
-        AddHandleLabel("End", endX);
+        AddHandleLabel("Start", startX, width, isStart: true);
+        AddHandleLabel("End", endX, width, isStart: false);
     }
 
-    private void AddHandleLabel(string text, double x)
+    private void AddHandleLabel(string text, double x, double width, bool isStart)
     {
         var label = new TextBlock
         {
             Text = text,
             FontSize = 11,
             FontWeight = Microsoft.UI.Text.FontWeights.Bold,
-            Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0x4F, 0x58, 0x38)),
+            Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0x2A, 0x32, 0x20)),
         };
         label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        Canvas.SetLeft(label, x - label.DesiredSize.Width / 2);
+        var labelWidth = label.DesiredSize.Width;
+        double left;
+        if (isStart && x < labelWidth)
+            left = 0;
+        else if (!isStart && x > width - labelWidth)
+            left = Math.Max(0, width - labelWidth);
+        else
+            left = Math.Clamp(x - labelWidth / 2, 0, Math.Max(0, width - labelWidth));
+
+        Canvas.SetLeft(label, left);
         Canvas.SetTop(label, 2);
         HandleLabelCanvas.Children.Add(label);
     }

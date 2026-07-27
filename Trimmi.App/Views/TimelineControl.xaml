@@ -79,13 +79,13 @@
 
             <Border
                 x:Name="StartThumb"
-                Width="14"
+                Width="18"
                 HorizontalAlignment="Left"
-                Background="#FF8F9A6E"
+                Background="#FFF7F0E2"
                 BorderBrush="#FF2A3220"
-                BorderThickness="1"
-                CornerRadius="3"
-                Margin="0,-2,0,-2"
+                BorderThickness="2"
+                CornerRadius="4"
+                Margin="0,-4,0,-4"
                 PointerPressed="StartThumb_PointerPressed"
                 PointerMoved="Filmstrip_PointerMoved"
                 PointerReleased="Filmstrip_PointerReleased"
@@ -94,7 +94,8 @@
                 <TextBlock
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    FontSize="10"
+                    FontSize="11"
+                    FontWeight="Bold"
                     Foreground="#FF2A3220"
                     Text="||"
                     IsHitTestVisible="False" />
@@ -102,13 +103,13 @@
 
             <Border
                 x:Name="EndThumb"
-                Width="14"
+                Width="18"
                 HorizontalAlignment="Left"
-                Background="#FF8F9A6E"
+                Background="#FFF7F0E2"
                 BorderBrush="#FF2A3220"
-                BorderThickness="1"
-                CornerRadius="3"
-                Margin="0,-2,0,-2"
+                BorderThickness="2"
+                CornerRadius="4"
+                Margin="0,-4,0,-4"
                 PointerPressed="EndThumb_PointerPressed"
                 PointerMoved="Filmstrip_PointerMoved"
                 PointerReleased="Filmstrip_PointerReleased"
@@ -117,7 +118,8 @@
                 <TextBlock
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    FontSize="10"
+                    FontSize="11"
+                    FontWeight="Bold"
                     Foreground="#FF2A3220"
                     Text="||"
                     IsHitTestVisible="False" />
