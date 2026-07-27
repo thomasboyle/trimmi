@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="Trimmi_App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Trimmi_App.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="using:Trimmi_App.Views"
+    Title="Trimmi"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource AppPageBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Grid.RowSpan="2"
+            CacheMode="BitmapCache"
+            IsHitTestVisible="False"
+            Opacity="0.32">
+            <Border.Background>
+                <ImageBrush ImageSource="{StaticResource GrainBitmap}" Stretch="UniformToFill" />
+            </Border.Background>
+        </Border>
+
+        <TitleBar
+            x:Name="AppTitleBar"
+            Height="40"
+            Title="Trimmi"
+            Foreground="{ThemeResource AppInkBrush}" />
+
+        <Grid
+            Grid.Row="1"
+            Padding="10"
+            ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left sidebar -->
+            <controls:GlassPanel Grid.Column="0">
+                <controls:GlassPanel.PanelContent>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+                            <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="1. Select Video" />
+
+                            <Grid x:Name="DropZone" MinHeight="180">
+                                <Rectangle
+                                    x:Name="DropZoneOutline"
+                                    RadiusX="10"
+                                    RadiusY="10"
+                                    Fill="{StaticResource FeatureGreenBackgroundBrush}"
+                                    IsHitTestVisible="False"
+                                    Stroke="{StaticResource DropZoneStrokeBrush}"
+                                    StrokeDashArray="4,3"
+                                    StrokeThickness="2.5" />
+                                <Border
+                                    x:Name="DropZoneHitTarget"
+                                    AllowDrop="True"
+                                    Background="Transparent"
+                                    CornerRadius="12"
+                                    DragOver="DropZone_DragOver"
+                                    Drop="DropZone_Drop"
+                                    PointerEntered="DropZone_PointerEntered"
+                                    PointerExited="DropZone_PointerExited" />
+                                <StackPanel
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="6"
+                                    IsHitTestVisible="False">
+                                    <Image
+                                        Width="52"
+                                        Height="52"
+                                        Source="{StaticResource IconCameraAddBitmap}"
+                                        Stretch="Uniform" />
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        Foreground="{StaticResource ResultLabelBrush}"
+                                        Style="{StaticResource BodyTextStyle}"
+                                        Text="Drop a video file here" />
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        Foreground="{StaticResource ResultLabelBrush}"
+                                        Opacity="0.7"
+                                        Style="{StaticResource CaptionTextStyle}"
+                                        Text="or" />
+                                </StackPanel>
+                                <Button
+                                    x:Name="SelectFileButton"
+                                    Margin="0,0,0,16"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom"
+                                    Click="SelectFileButton_Click"
+                                    Style="{StaticResource GlassSecondaryButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Image
+                                            Width="16"
+                                            Height="16"
+                                            Source="{StaticResource IconFolderBitmap}"
+                                            Stretch="Uniform" />
+                                        <TextBlock Style="{StaticResource BodyTextStyle}" Text="Select File" />
+                                    </StackPanel>
+                                </Button>
+                                <Image
+                                    Width="48"
+                                    Height="48"
+                                    Margin="10"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    IsHitTestVisible="False"
+                                    Opacity="0.85"
+                                    Source="{StaticResource DecoLeafSprigBitmap}"
+                                    Stretch="Uniform" />
+                            </Grid>
+
+                            <TextBlock
+                                Style="{StaticResource CaptionTextStyle}"
+                                Text="Supports: MP4, MOV, MKV, WebM, AVI, etc."
+                                TextWrapping="WrapWholeWords" />
+
+                            <Border Height="8" />
+
+                            <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="2. Output Settings" />
+
+                            <TextBlock Style="{StaticResource GlassFieldLabelStyle}" Text="Encoder" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox
+                                    x:Name="EncoderCombo"
+                                    Grid.Column="0"
+                                    SelectionChanged="EncoderCombo_SelectionChanged"
+                                    Style="{StaticResource GlassInputComboBoxStyle}" />
+                                <Border
+                                    x:Name="GpuBadge"
+                                    Grid.Column="1"
+                                    Padding="7,2"
+                                    VerticalAlignment="Center"
+                                    Background="{StaticResource SecurityBannerFillBrush}"
+                                    BorderBrush="{StaticResource ResultCardBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Visibility="Collapsed">
+                                    <TextBlock
+                                        FontFamily="{StaticResource AppPixelFontBoldFamily}"
+                                        FontSize="11"
+                                        Foreground="{StaticResource SuccessGreenBrush}"
+                                        Text="GPU" />
+                                </Border>
+                            </Grid>
+                            <TextBlock
+                                x:Name="EncoderHelperText"
+                                Style="{StaticResource CaptionTextStyle}"
+                                Text="Will fallback to CPU (AV1) if GPU is not available."
+                                TextWrapping="WrapWholeWords" />
+
+                            <TextBlock Style="{StaticResource GlassFieldLabelStyle}" Text="Format" />
+                            <ComboBox
+                                x:Name="FormatCombo"
+                                SelectionChanged="FormatCombo_SelectionChanged"
+                                Style="{StaticResource GlassInputComboBoxStyle}" />
+                            <TextBlock
+                                x:Name="FormatHelperText"
+                                Style="{StaticResource CaptionTextStyle}"
+                                TextWrapping="WrapWholeWords" />
+
+                            <Border Height="8" />
+
+                            <Border
+                                x:Name="GpuStatusCard"
+                                Padding="12"
+                                Background="{StaticResource InputSurfaceBrush}"
+                                BorderBrush="{StaticResource ResultCardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4">
+                                <Grid ColumnSpacing="10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon
+                                        x:Name="GpuStatusIcon"
+                                        FontSize="18"
+                                        Foreground="{StaticResource SuccessGreenBrush}"
+                                        Glyph="&#xE73E;" />
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <TextBlock
+                                            x:Name="GpuStatusTitle"
+                                            FontFamily="{StaticResource AppPixelFontBoldFamily}"
+                                            FontSize="12"
+                                            Foreground="{StaticResource SuccessGreenBrush}"
+                                            Text="GPU Acceleration: Available" />
+                                        <TextBlock
+                                            x:Name="GpuStatusName"
+                                            Style="{StaticResource CaptionTextStyle}"
+                                            Text="Detecting..."
+                                            TextWrapping="WrapWholeWords" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </controls:GlassPanel.PanelContent>
+            </controls:GlassPanel>
+
+            <!-- Right main panel -->
+            <controls:GlassPanel Grid.Column="1">
+                <controls:GlassPanel.PanelContent>
+                    <Grid RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" MinHeight="240" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Grid>
+                            <TextBlock
+                                x:Name="FileNameLabel"
+                                Style="{StaticResource BodyTextStyle}"
+                                FontFamily="{StaticResource AppPixelFontBoldFamily}"
+                                Text="No video loaded" />
+                            <TextBlock
+                                x:Name="TotalDurationLabel"
+                                HorizontalAlignment="Right"
+                                Style="{StaticResource CaptionTextStyle}"
+                                Text="00:00:00.000" />
+                        </Grid>
+
+                        <Border
+                            Grid.Row="1"
+                            Background="#2A2924"
+                            BorderBrush="#FF6B744F"
+                            BorderThickness="1"
+                            CornerRadius="12">
+                            <MediaPlayerElement
+                                x:Name="PreviewPlayer"
+                                AreTransportControlsEnabled="False"
+                                AutoPlay="False"
+                                Stretch="Uniform" />
+                        </Border>
+
+                        <Grid Grid.Row="2" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Button
+                                x:Name="PlayPauseButton"
+                                Width="36"
+                                Height="36"
+                                Click="PlayPauseButton_Click"
+                                Content="&#xE768;"
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                Style="{StaticResource GlassSecondaryButtonStyle}"
+                                ToolTipService.ToolTip="Play / Pause" />
+                            <Button
+                                Grid.Column="1"
+                                Width="36"
+                                Height="36"
+                                Click="PrevFrameButton_Click"
+                                Content="&#xE100;"
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                Style="{StaticResource GlassSecondaryButtonStyle}"
+                                ToolTipService.ToolTip="Previous frame" />
+                            <Button
+                                Grid.Column="2"
+                                Width="36"
+                                Height="36"
+                                Click="NextFrameButton_Click"
+                                Content="&#xE101;"
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                Style="{StaticResource GlassSecondaryButtonStyle}"
+                                ToolTipService.ToolTip="Next frame" />
+                            <Button
+                                Grid.Column="3"
+                                Width="36"
+                                Height="36"
+                                Click="JumpEndButton_Click"
+                                Content="&#xE101;"
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                Style="{StaticResource GlassSecondaryButtonStyle}"
+                                ToolTipService.ToolTip="Jump to end" />
+                            <FontIcon
+                                Grid.Column="4"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                Foreground="{ThemeResource AppInkBrush}"
+                                Glyph="&#xE767;" />
+                            <Slider
+                                x:Name="VolumeSlider"
+                                Grid.Column="5"
+                                VerticalAlignment="Center"
+                                Maximum="100"
+                                Minimum="0"
+                                Style="{StaticResource GlassSliderStyle}"
+                                Value="80"
+                                ValueChanged="VolumeSlider_ValueChanged" />
+                            <TextBlock
+                                x:Name="TimeReadout"
+                                Grid.Column="7"
+                                VerticalAlignment="Center"
+                                MinWidth="210"
+                                Style="{StaticResource CaptionTextStyle}"
+                                Text="00:00:00.000 / 00:00:00.000" />
+                            <Button
+                                Grid.Column="9"
+                                Width="36"
+                                Height="36"
+                                Click="FullscreenButton_Click"
+                                Content="&#xE740;"
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                Style="{StaticResource GlassSecondaryButtonStyle}"
+                                ToolTipService.ToolTip="Fullscreen" />
+                        </Grid>
+
+                        <views:TimelineControl
+                            x:Name="Timeline"
+                            Grid.Row="3"
+                            TrimChanged="Timeline_TrimChanged"
+                            SeekRequested="Timeline_SeekRequested" />
+
+                        <Grid Grid.Row="4" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Style="{StaticResource GlassFieldLabelStyle}"
+                                Text="Start" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                <TextBox
+                                    x:Name="StartEdit"
+                                    Width="120"
+                                    LostFocus="StartEdit_LostFocus"
+                                    Style="{StaticResource GlassTextBoxStyle}"
+                                    Text="00:00:00.000"
+                                    TextAlignment="Center"
+                                    KeyDown="TrimEdit_KeyDown" />
+                                <StackPanel Spacing="0">
+                                    <Button
+                                        Width="22"
+                                        Height="18"
+                                        Padding="0"
+                                        Click="StartUp_Click"
+                                        Content="&#xE70E;"
+                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                        FontSize="10"
+                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                    <Button
+                                        Width="22"
+                                        Height="18"
+                                        Padding="0"
+                                        Click="StartDown_Click"
+                                        Content="&#xE70D;"
+                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                        FontSize="10"
+                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <TextBlock
+                                x:Name="TrimDurationLabel"
+                                Grid.Column="3"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource CaptionTextStyle}"
+                                Text="Duration  00:00:00.000" />
+
+                            <TextBlock
+                                Grid.Column="5"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource GlassFieldLabelStyle}"
+                                Text="End" />
+                            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4">
+                                <TextBox
+                                    x:Name="EndEdit"
+                                    Width="120"
+                                    LostFocus="EndEdit_LostFocus"
+                                    Style="{StaticResource GlassTextBoxStyle}"
+                                    Text="00:00:00.000"
+                                    TextAlignment="Center"
+                                    KeyDown="TrimEdit_KeyDown" />
+                                <StackPanel Spacing="0">
+                                    <Button
+                                        Width="22"
+                                        Height="18"
+                                        Padding="0"
+                                        Click="EndUp_Click"
+                                        Content="&#xE70E;"
+                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                        FontSize="10"
+                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                    <Button
+                                        Width="22"
+                                        Height="18"
+                                        Padding="0"
+                                        Click="EndDown_Click"
+                                        Content="&#xE70D;"
+                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                        FontSize="10"
+                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+
+                        <Button
+                            x:Name="ExportButton"
+                            Grid.Row="5"
+                            MinWidth="180"
+                            HorizontalAlignment="Right"
+                            Click="ExportButton_Click"
+                            Content="Trim &amp; Export"
+                            Style="{StaticResource GlassPrimaryButtonStyle}" />
+                    </Grid>
+                </controls:GlassPanel.PanelContent>
+            </controls:GlassPanel>
+        </Grid>
+    </Grid>
+</Window>

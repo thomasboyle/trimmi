@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Trimmi.Core/Trimmi.Core.csproj" />
+  <Project Path="Trimmi.App/Trimmi.App.csproj" />
+</Solution>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Trimmi.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Trimmi.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

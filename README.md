@@ -1,39 +1,32 @@
 # Trimmi
 
-Portable Windows video trimmer (C++ / Qt 6): drag-and-drop, live preview, filmstrip timeline, GPU AV1 when available (NVENC / AMF / QSV) with CPU fallback (SVT-AV1 / libaom).
+Portable Windows video trimmer (WinUI 3 / .NET 8): drag-and-drop, live preview, filmstrip timeline, GPU AV1 when available (NVENC / AMF / QSV) with CPU fallback (SVT-AV1 / libaom).
 
 ## Requirements
 
 - Windows 10/11 x64
-- Visual Studio 2026 (MSVC) + CMake 4.2+ (VS 2022 also works locally)
-- Qt 6.12+ (Widgets, Multimedia, Svg) — via installer or [vcpkg](https://github.com/microsoft/vcpkg)
-- `ffmpeg.exe` / `ffprobe.exe` on `PATH` or beside `Trimmi.exe` ([BtbN](https://github.com/BtbN/FFmpeg-Builds/releases) or [gyan.dev](https://www.gyan.dev/ffmpeg/builds/))
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Visual Studio 2022+ with **Windows App SDK** / WinUI workload (or build from CLI)
+- Bundled `ffmpeg.exe` / `ffprobe.exe` via `.\scripts\get-ffmpeg.ps1`
 
 ## Build
 
-With system Qt (fast — same approach as CI):
-
 ```powershell
-cmake -B build -G "Visual Studio 18 2026" -A x64
-cmake --build build --config Release
+.\scripts\get-ffmpeg.ps1
+dotnet build Trimmi.sln -c Debug -p:Platform=x64 -p:WindowsPackageType=None
 ```
 
-Or via vcpkg (`vcpkg.json` pulls Qt only; first configure is slow):
+Run unpackaged:
 
 ```powershell
-.\scripts\configure.ps1
-cmake --build build --config Release
+dotnet run --project Trimmi.App -c Debug -p:Platform=x64 -p:WindowsPackageType=None
 ```
-
-Output: `build\Release\Trimmi.exe`.
 
 ## Usage
 
 1. Drop a video (or **Select File**).
 2. Set **Start** / **End** (handles or time fields).
 3. Choose encoder / format, then **Trim & Export**.
-
-`Space` play/pause · `Esc` exit fullscreen
 
 ## Versioning
 
@@ -47,16 +40,17 @@ Version is in `VERSION` (`X.Y.Z`):
 
 ## Release
 
-**GitHub Actions:** [`.github/workflows/release.yml`](.github/workflows/release.yml) — runs on every merge/push to `main` (and via **Actions → Release → Run workflow**). Builds, packs the Inno installer, publishes `vX.Y.Z` with `TrimmiSetup-X.Y.Z.exe`, then patch-bumps `VERSION` on `main`.
+**GitHub Actions:** [`.github/workflows/release.yml`](.github/workflows/release.yml) — on push to `main` (and via **Actions → Release → Run workflow**). Publishes `vX.Y.Z` with `TrimmiSetup-X.Y.Z.exe`, then patch-bumps `VERSION`.
 
-**Local installer** (Inno Setup 6, after a Release build):
+**Local installer** (Inno Setup 6):
 
 ```powershell
-.\installer\build_installer.ps1
+.\scripts\get-ffmpeg.ps1
+.\scripts\build-installer.ps1 -Version (Get-Content VERSION).Trim()
 ```
 
-Stages a self-contained payload (Qt, CRT, FFmpeg) and produces `dist\TrimmiSetup-<VERSION>.exe`. Stage only: `.\installer\stage_payload.ps1`.
+Output: `installer\output\TrimmiSetup-<VERSION>.exe`.
 
 ## License
 
-As-is for Trimmi. Qt and FFmpeg have their own licenses (LGPL/GPL depending on build).
+As-is for Trimmi. Pixelify Sans is OFL. FFmpeg has its own license (GPL for the bundled shared build).

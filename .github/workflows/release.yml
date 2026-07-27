@@ -23,15 +23,14 @@ permissions:
   contents: write
 
 env:
-  FFMPEG_CACHE_DIR: tools/ffmpeg
-  # Pin for stable cache keys (bump when intentionally upgrading)
-  QT_VERSION: "6.12.0"
-  FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
+  DOTNET_NOLOGO: '1'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+  NUGET_XMLDOC_MODE: skip
 
 jobs:
   release:
     name: Build installer & publish
-    # Skip the bot version-bump push so releases do not loop
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.actor != 'github-actions[bot]' &&
@@ -64,62 +63,25 @@ jobs:
             throw "Tag $tag already exists. Bump VERSION on main before releasing again."
           }
 
-      - name: Cache FFmpeg tools
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Trimmi.App/Trimmi.App.csproj', 'Trimmi.Core/Trimmi.Core.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Cache FFmpeg
         id: cache-ffmpeg
         uses: actions/cache@v4
         with:
-          path: ${{ env.FFMPEG_CACHE_DIR }}
-          key: ffmpeg-btbn-win64-gpl-master-v1
+          path: Trimmi.App/Assets/ffmpeg
+          key: ffmpeg-win64-gpl-shared-v1
 
-      - name: Download FFmpeg tools
+      - name: Download FFmpeg
         if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         shell: pwsh
-        run: |
-          $toolsDir = Join-Path $env:GITHUB_WORKSPACE $env:FFMPEG_CACHE_DIR
-          New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
-          $zip = Join-Path $toolsDir "ffmpeg-win64-gpl.zip"
-          $urls = @(
-            $env:FFMPEG_URL,
-            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
-          )
-          $downloaded = $false
-          foreach ($url in $urls) {
-            try {
-              Write-Host "Downloading $url"
-              Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
-              $downloaded = $true
-              break
-            } catch {
-              Write-Warning "Download failed: $($_.Exception.Message)"
-            }
-          }
-          if (-not $downloaded) { throw "Could not download FFmpeg from any mirror" }
-          Expand-Archive -Path $zip -DestinationPath $toolsDir -Force
-          Remove-Item $zip -Force -ErrorAction SilentlyContinue
-
-      - name: Export FFmpeg path
-        shell: pwsh
-        run: |
-          $toolsDir = Join-Path $env:GITHUB_WORKSPACE $env:FFMPEG_CACHE_DIR
-          $bin = Get-ChildItem -Path $toolsDir -Recurse -Filter "ffmpeg.exe" |
-            Where-Object { $_.DirectoryName -match '[\\/]bin$' } |
-            Select-Object -First 1
-          if (-not $bin) { throw "ffmpeg.exe not found under $toolsDir" }
-          $binDir = $bin.DirectoryName
-          "FFMPEG_BIN=$binDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          Write-Host "FFmpeg tools: $binDir"
-          & (Join-Path $binDir "ffmpeg.exe") -version | Select-Object -First 1
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          # aqt 3.3.0 cannot install Qt 6.11+ (repo layout change); use git until 3.4+
-          aqtsource: git+https://github.com/miurahr/aqtinstall.git
-          version: ${{ env.QT_VERSION }}
-          arch: win64_msvc2022_64
-          modules: qtmultimedia
-          archives: qtbase qtsvg qttools qtmultimedia
-          cache: true
+        run: .\scripts\get-ffmpeg.ps1
 
       - name: Cache Inno Setup
         id: cache-inno
@@ -142,53 +104,15 @@ jobs:
           if (-not $iscc) { throw "ISCC.exe not found after Inno Setup install" }
           Write-Host "ISCC: $iscc"
 
-      - name: Configure CMake
+      - name: Build installer
         shell: pwsh
-        run: |
-          $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          cmake -B build -G "Visual Studio 18 2026" -A x64 `
-            -DTRIMMI_RUN_WINDEPLOYQT=OFF
-
-      - name: Build Trimmi
-        shell: pwsh
-        run: |
-          $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          cmake --build build --config Release --parallel
-
-      - name: Locate Release output directory
-        id: outdir
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem build -Recurse -Filter Trimmi.exe |
-            Where-Object { $_.FullName -match '\\Release\\' } |
-            Select-Object -First 1
-          if (-not $exe) {
-            Get-ChildItem build -Recurse -Filter Trimmi.exe | Select-Object -First 5 FullName
-            throw "Trimmi.exe not found after build"
-          }
-          $dir = $exe.DirectoryName
-          "dir=$dir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "Output dir: $dir"
-
-      - name: Stage payload and build standalone installer
-        shell: pwsh
-        run: |
-          $version = "${{ steps.version.outputs.version }}"
-          $buildDir = "${{ steps.outdir.outputs.dir }}"
-          $env:Path = "$env:FFMPEG_BIN;$env:Path"
-          & .\installer\stage_payload.ps1 -Configuration Release -BuildDir $buildDir
-          & .\installer\build_installer.ps1 -Configuration Release -Version $version -SkipStage
-          $setup = Join-Path "dist" "TrimmiSetup-$version.exe"
-          if (-not (Test-Path $setup)) {
-            throw "Expected installer missing: $setup"
-          }
-          Write-Host "Installer: $setup ($([math]::Round((Get-Item $setup).Length / 1MB, 1)) MB)"
+        run: .\scripts\build-installer.ps1 -Version '${{ steps.version.outputs.version }}'
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v5
         with:
           name: TrimmiSetup-${{ steps.version.outputs.version }}
-          path: dist/TrimmiSetup-${{ steps.version.outputs.version }}.exe
+          path: installer/output/TrimmiSetup-${{ steps.version.outputs.version }}.exe
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -199,13 +123,13 @@ jobs:
           body: |
             ## Trimmi ${{ steps.version.outputs.version }}
 
-            Standalone Windows installer — no separate Qt, FFmpeg, or Visual C++ install required.
+            Standalone Windows installer — WinUI 3 + bundled FFmpeg. No separate runtime install required.
 
             ### Install
             1. Download `TrimmiSetup-${{ steps.version.outputs.version }}.exe`
             2. Run the installer
             3. Launch **Trimmi** from the Start Menu or desktop shortcut
-          files: dist/TrimmiSetup-${{ steps.version.outputs.version }}.exe
+          files: installer/output/TrimmiSetup-${{ steps.version.outputs.version }}.exe
           fail_on_unmatched_files: true
           generate_release_notes: true
 
@@ -225,7 +149,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add VERSION vcpkg.json installer/Trimmi.iss
+          git add VERSION installer/Trimmi.iss Trimmi.App/Package.appxmanifest
           if (git diff --cached --quiet) {
             Write-Host "No version files changed; skipping commit"
             exit 0

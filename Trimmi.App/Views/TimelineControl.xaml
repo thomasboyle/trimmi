@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Trimmi_App.Views.TimelineControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    MinHeight="96"
+    mc:Ignorable="d">
+
+    <Grid x:Name="RootGrid" Padding="12,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="22" />
+            <RowDefinition Height="56" />
+            <RowDefinition Height="18" />
+        </Grid.RowDefinitions>
+
+        <Canvas
+            x:Name="RulerCanvas"
+            Grid.Row="0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch" />
+
+        <Grid
+            x:Name="FilmstripHost"
+            Grid.Row="1"
+            Background="#2A2924"
+            CornerRadius="10"
+            BorderBrush="#FF6B744F"
+            BorderThickness="1"
+            PointerPressed="Filmstrip_PointerPressed"
+            PointerMoved="Filmstrip_PointerMoved"
+            PointerReleased="Filmstrip_PointerReleased"
+            PointerCanceled="Filmstrip_PointerReleased"
+            PointerCaptureLost="Filmstrip_PointerReleased"
+            SizeChanged="FilmstripHost_SizeChanged">
+
+            <ItemsControl x:Name="ThumbnailStrip" IsHitTestVisible="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Image
+                            Stretch="UniformToFill"
+                            Source="{Binding}"
+                            Width="80"
+                            Height="54" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border
+                x:Name="DimLeft"
+                HorizontalAlignment="Left"
+                Background="#8C1E1D1A"
+                IsHitTestVisible="False" />
+            <Border
+                x:Name="DimRight"
+                HorizontalAlignment="Left"
+                Background="#8C1E1D1A"
+                IsHitTestVisible="False" />
+            <Border
+                x:Name="SelectionOverlay"
+                HorizontalAlignment="Left"
+                Background="#508F9A6E"
+                BorderBrush="#FFA7B18F"
+                BorderThickness="1.5"
+                IsHitTestVisible="False" />
+
+            <Border
+                x:Name="Playhead"
+                Width="2"
+                HorizontalAlignment="Left"
+                Background="#FFF7F0E2"
+                IsHitTestVisible="False" />
+
+            <Border
+                x:Name="StartThumb"
+                Width="14"
+                HorizontalAlignment="Left"
+                Background="#FF8F9A6E"
+                BorderBrush="#FF2A3220"
+                BorderThickness="1"
+                CornerRadius="3"
+                Margin="0,-2,0,-2"
+                PointerPressed="StartThumb_PointerPressed"
+                PointerMoved="Filmstrip_PointerMoved"
+                PointerReleased="Filmstrip_PointerReleased"
+                PointerCanceled="Filmstrip_PointerReleased"
+                PointerCaptureLost="Filmstrip_PointerReleased">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    Foreground="#FF2A3220"
+                    Text="||"
+                    IsHitTestVisible="False" />
+            </Border>
+
+            <Border
+                x:Name="EndThumb"
+                Width="14"
+                HorizontalAlignment="Left"
+                Background="#FF8F9A6E"
+                BorderBrush="#FF2A3220"
+                BorderThickness="1"
+                CornerRadius="3"
+                Margin="0,-2,0,-2"
+                PointerPressed="EndThumb_PointerPressed"
+                PointerMoved="Filmstrip_PointerMoved"
+                PointerReleased="Filmstrip_PointerReleased"
+                PointerCanceled="Filmstrip_PointerReleased"
+                PointerCaptureLost="Filmstrip_PointerReleased">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    Foreground="#FF2A3220"
+                    Text="||"
+                    IsHitTestVisible="False" />
+            </Border>
+        </Grid>
+
+        <Canvas
+            x:Name="HandleLabelCanvas"
+            Grid.Row="2"
+            HorizontalAlignment="Stretch"
+            IsHitTestVisible="False" />
+    </Grid>
+</UserControl>

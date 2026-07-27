@@ -35,16 +35,6 @@ function Set-TrimmiVersion([string]$v) {
 
     [System.IO.File]::WriteAllText($versionFile, "$v`n")
 
-    $vcpkg = Join-Path $root "vcpkg.json"
-    if (Test-Path $vcpkg) {
-        $content = [System.IO.File]::ReadAllText($vcpkg)
-        $updated = [regex]::Replace(
-            $content,
-            '("version-string"\s*:\s*")\d+\.\d+\.\d+(")',
-            "`${1}$v`${2}")
-        [System.IO.File]::WriteAllText($vcpkg, $updated)
-    }
-
     $iss = Join-Path $root "installer\Trimmi.iss"
     if (Test-Path $iss) {
         $content = [System.IO.File]::ReadAllText($iss)
@@ -53,6 +43,16 @@ function Set-TrimmiVersion([string]$v) {
             '(#define MyAppVersion ")\d+\.\d+\.\d+(")',
             "`${1}$v`${2}")
         [System.IO.File]::WriteAllText($iss, $updated)
+    }
+
+    $manifest = Join-Path $root "Trimmi.App\Package.appxmanifest"
+    if (Test-Path $manifest) {
+        $content = [System.IO.File]::ReadAllText($manifest)
+        $updated = [regex]::Replace(
+            $content,
+            '(Version=")(\d+\.\d+\.\d+)\.0(")',
+            "`${1}$v.0`${3}")
+        [System.IO.File]::WriteAllText($manifest, $updated)
     }
 
     Write-Host "Version set to $v"
