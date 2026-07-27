@@ -185,25 +185,42 @@ public sealed class EncoderCapabilities
             _availableEncoders.Add(name);
         }
 
+        var vendor = _gpu.Vendor;
         var hw = new List<string>();
-        if (Has("av1_nvenc") || Has("h264_nvenc") || Has("hevc_nvenc"))
-            hw.Add("NVENC");
-        if (Has("av1_amf") || Has("h264_amf") || Has("hevc_amf"))
-            hw.Add("AMF");
-        if (Has("av1_qsv") || Has("h264_qsv") || Has("hevc_qsv"))
-            hw.Add("QSV");
+
+        // Only count the API that matches the detected GPU as available.
+        var matchedApi = vendor switch
+        {
+            "NVIDIA" when Has("av1_nvenc") || Has("h264_nvenc") || Has("hevc_nvenc") => "NVENC",
+            "AMD" when Has("av1_amf") || Has("h264_amf") || Has("hevc_amf") => "AMF",
+            "Intel" when Has("av1_qsv") || Has("h264_qsv") || Has("hevc_qsv") => "QSV",
+            _ => null,
+        };
+
+        if (matchedApi is null && (string.IsNullOrEmpty(vendor) || vendor == "Unknown"))
+        {
+            if (Has("av1_nvenc") || Has("h264_nvenc") || Has("hevc_nvenc"))
+                matchedApi = "NVENC";
+            else if (Has("av1_amf") || Has("h264_amf") || Has("hevc_amf"))
+                matchedApi = "AMF";
+            else if (Has("av1_qsv") || Has("h264_qsv") || Has("hevc_qsv"))
+                matchedApi = "QSV";
+        }
+
+        if (matchedApi is not null)
+            hw.Add(matchedApi);
 
         var available = hw.Count > 0;
         var gpuName = _gpu.Name;
-        var vendor = _gpu.Vendor;
         if (available && string.IsNullOrEmpty(gpuName))
         {
-            if (hw.Contains("NVENC"))
-                gpuName = "NVIDIA GPU (NVENC)";
-            else if (hw.Contains("AMF"))
-                gpuName = "AMD GPU (AMF)";
-            else if (hw.Contains("QSV"))
-                gpuName = "Intel GPU (QSV)";
+            gpuName = matchedApi switch
+            {
+                "NVENC" => "NVIDIA GPU (NVENC)",
+                "AMF" => "AMD GPU (AMF)",
+                "QSV" => "Intel GPU (QSV)",
+                _ => gpuName,
+            };
         }
 
         _gpu = new GpuInfo
@@ -219,99 +236,26 @@ public sealed class EncoderCapabilities
 
     private void BuildOptions()
     {
-        if (Has("av1_nvenc"))
-        {
-            _encoders.Add(new EncoderOption
-            {
-                Id = "gpu_av1_nvenc",
-                Label = "Use GPU (AV1)",
-                FfmpegEncoder = "av1_nvenc",
-                IsGpu = true,
-                Badge = "GPU",
-            });
-        }
-
-        if (Has("av1_amf"))
-        {
-            _encoders.Add(new EncoderOption
-            {
-                Id = "gpu_av1_amf",
-                Label = "Use GPU AMF (AV1)",
-                FfmpegEncoder = "av1_amf",
-                IsGpu = true,
-                Badge = "GPU",
-            });
-        }
-
-        if (Has("av1_qsv"))
-        {
-            _encoders.Add(new EncoderOption
-            {
-                Id = "gpu_av1_qsv",
-                Label = "Use GPU QSV (AV1)",
-                FfmpegEncoder = "av1_qsv",
-                IsGpu = true,
-                Badge = "GPU",
-            });
-        }
-
-        if (_encoders.Count == 0 && _gpu.Available)
-        {
-            if (Has("hevc_nvenc"))
-            {
-                _encoders.Add(new EncoderOption
-                {
-                    Id = "gpu_hevc_nvenc",
-                    Label = "Use GPU (HEVC)",
-                    FfmpegEncoder = "hevc_nvenc",
-                    IsGpu = true,
-                    Badge = "GPU",
-                });
-            }
-            else if (Has("h264_nvenc"))
-            {
-                _encoders.Add(new EncoderOption
-                {
-                    Id = "gpu_h264_nvenc",
-                    Label = "Use GPU (H.264)",
-                    FfmpegEncoder = "h264_nvenc",
-                    IsGpu = true,
-                    Badge = "GPU",
-                });
-            }
-        }
+        TryAddBestGpuEncoder();
 
         if (Has("libsvtav1"))
         {
             _encoders.Add(new EncoderOption
             {
-                Id = "cpu_svtav1",
-                Label = "CPU (SVT-AV1)",
+                Id = "cpu_av1",
+                Label = "AV1 (CPU)",
                 FfmpegEncoder = "libsvtav1",
                 IsGpu = false,
                 Badge = "CPU",
             });
         }
-
-        if (Has("libaom-av1"))
+        else if (Has("libaom-av1"))
         {
             _encoders.Add(new EncoderOption
             {
-                Id = "cpu_aom",
-                Label = "CPU (libaom AV1)",
+                Id = "cpu_av1",
+                Label = "AV1 (CPU)",
                 FfmpegEncoder = "libaom-av1",
-                IsGpu = false,
-                Badge = "CPU",
-            });
-        }
-
-        if (Has("libx265"))
-        {
-            _encoders.Add(new EncoderOption
-            {
-                Id = "cpu_x265",
-                Label = "CPU (x265 HEVC)",
-                FfmpegEncoder = "libx265",
                 IsGpu = false,
                 Badge = "CPU",
             });
@@ -321,9 +265,21 @@ public sealed class EncoderCapabilities
         {
             _encoders.Add(new EncoderOption
             {
-                Id = "cpu_x264",
-                Label = "CPU (x264 H.264)",
+                Id = "cpu_h264",
+                Label = "H.264 (CPU)",
                 FfmpegEncoder = "libx264",
+                IsGpu = false,
+                Badge = "CPU",
+            });
+        }
+
+        if (Has("libx265"))
+        {
+            _encoders.Add(new EncoderOption
+            {
+                Id = "cpu_h265",
+                Label = "H.265 (CPU)",
+                FfmpegEncoder = "libx265",
                 IsGpu = false,
                 Badge = "CPU",
             });
@@ -343,58 +299,74 @@ public sealed class EncoderCapabilities
 
         _formats.Add(new FormatOption
         {
-            Id = "mp4_av1",
-            Label = "MP4 (AV1)",
+            Id = "mp4",
+            Label = "MP4",
             Container = "mp4",
-            VideoCodecHint = "av1",
-            HelperText = "Modern AV1 in MP4 — best quality/size for new devices.",
+            HelperText = "Widely supported container — best for sharing and playback.",
             DefaultExtension = "mp4",
         });
         _formats.Add(new FormatOption
         {
-            Id = "mp4_hevc",
-            Label = "MP4 (HEVC)",
-            Container = "mp4",
-            VideoCodecHint = "hevc",
-            HelperText = "HEVC/H.265 in MP4 — wide compatibility with smaller files.",
-            DefaultExtension = "mp4",
-        });
-        _formats.Add(new FormatOption
-        {
-            Id = "mp4_h264",
-            Label = "MP4 (H.264)",
-            Container = "mp4",
-            VideoCodecHint = "h264",
-            HelperText = "H.264 in MP4 — maximum compatibility.",
-            DefaultExtension = "mp4",
-        });
-        _formats.Add(new FormatOption
-        {
-            Id = "mkv_av1",
-            Label = "MKV (AV1)",
+            Id = "mkv",
+            Label = "MKV",
             Container = "mkv",
-            VideoCodecHint = "av1",
-            HelperText = "AV1 in Matroska — flexible container, open formats.",
+            HelperText = "Flexible Matroska container — open formats, fewer limits.",
             DefaultExtension = "mkv",
         });
         _formats.Add(new FormatOption
         {
-            Id = "webm_av1",
-            Label = "WebM (AV1)",
+            Id = "webm",
+            Label = "WebM",
             Container = "webm",
-            VideoCodecHint = "av1",
-            HelperText = "AV1 in WebM — good for web delivery.",
+            HelperText = "Web-friendly container — best with AV1 for browsers.",
             DefaultExtension = "webm",
         });
-        _formats.Add(new FormatOption
+    }
+
+    private void TryAddBestGpuEncoder()
+    {
+        foreach (var candidate in GpuEncoderCandidates(_gpu.Vendor))
         {
-            Id = "mp4_copy",
-            Label = "MP4 (stream copy)",
-            Container = "mp4",
-            VideoCodecHint = "copy",
-            HelperText = "Lossless cut when codecs fit MP4 — fastest, no re-encode.",
-            DefaultExtension = "mp4",
-        });
+            if (!Has(candidate.FfmpegEncoder))
+                continue;
+
+            _encoders.Add(new EncoderOption
+            {
+                Id = candidate.Id,
+                Label = candidate.Label,
+                FfmpegEncoder = candidate.FfmpegEncoder,
+                IsGpu = true,
+                Badge = "GPU",
+            });
+            return;
+        }
+    }
+
+    private static IEnumerable<(string Id, string Label, string FfmpegEncoder)> GpuEncoderCandidates(string vendor)
+    {
+        // Only expose the API that matches the detected GPU. Unknown vendor: try in priority order.
+        var apis = vendor switch
+        {
+            "NVIDIA" => new[] { "nvenc" },
+            "AMD" => new[] { "amf" },
+            "Intel" => new[] { "qsv" },
+            _ => new[] { "nvenc", "amf", "qsv" },
+        };
+
+        var codecs = new (string Suffix, string LabelPrefix, string IdPrefix)[]
+        {
+            ("av1", "AV1", "gpu_av1"),
+            ("hevc", "H.265", "gpu_h265"),
+            ("h264", "H.264", "gpu_h264"),
+        };
+
+        foreach (var api in apis)
+        {
+            foreach (var (suffix, labelPrefix, idPrefix) in codecs)
+            {
+                yield return ($"{idPrefix}_{api}", $"{labelPrefix} (GPU)", $"{suffix}_{api}");
+            }
+        }
     }
 
     private static void TryKill(System.Diagnostics.Process proc)

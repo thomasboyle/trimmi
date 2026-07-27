@@ -157,7 +157,7 @@
                             <TextBlock
                                 x:Name="EncoderHelperText"
                                 Style="{StaticResource CaptionTextStyle}"
-                                Text="Will fallback to CPU (AV1) if GPU is not available."
+                                Text="GPU selection uses the best encoder for your hardware. Falls back to CPU if GPU encode fails."
                                 TextWrapping="WrapWholeWords" />
 
                             <TextBlock Style="{StaticResource GlassFieldLabelStyle}" Text="Format" />

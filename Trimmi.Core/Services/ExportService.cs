@@ -201,10 +201,7 @@ public sealed partial class ExportService
                 .ToString("F3", CultureInfo.InvariantCulture),
         };
 
-        var streamCopy = request.Format.VideoCodecHint == "copy"
-                         || request.Encoder.FfmpegEncoder == "copy";
-
-        if (streamCopy)
+        if (request.Encoder.FfmpegEncoder == "copy")
         {
             args.AddRange(["-c", "copy", "-avoid_negative_ts", "make_zero"]);
         }
@@ -212,16 +209,7 @@ public sealed partial class ExportService
         {
             var vEncoder = request.Encoder.FfmpegEncoder;
             if (forceCpuFallback && request.Encoder.IsGpu)
-                vEncoder = PickCpuAv1Encoder();
-
-            var hint = request.Format.VideoCodecHint;
-            if (!forceCpuFallback && !request.Encoder.IsGpu)
-            {
-                if (hint == "h264" && vEncoder.Contains("av1", StringComparison.Ordinal))
-                    vEncoder = "libx264";
-                else if (hint == "hevc" && vEncoder.Contains("av1", StringComparison.Ordinal))
-                    vEncoder = "libx265";
-            }
+                vEncoder = PickCpuFallbackEncoder(vEncoder);
 
             args.AddRange(["-c:v", vEncoder]);
 
@@ -234,6 +222,18 @@ public sealed partial class ExportService
                 args.AddRange(["-quality", "balanced", "-rc", "cqp", "-qp_i", "28"]);
             }
             else if (vEncoder == "av1_qsv")
+            {
+                args.AddRange(["-global_quality", "28"]);
+            }
+            else if (vEncoder is "hevc_nvenc" or "h264_nvenc")
+            {
+                args.AddRange(["-preset", "p4", "-rc", "vbr", "-cq", "28", "-b:v", "0"]);
+            }
+            else if (vEncoder is "hevc_amf" or "h264_amf")
+            {
+                args.AddRange(["-quality", "balanced", "-rc", "cqp", "-qp_i", "28"]);
+            }
+            else if (vEncoder is "hevc_qsv" or "h264_qsv")
             {
                 args.AddRange(["-global_quality", "28"]);
             }
@@ -267,11 +267,18 @@ public sealed partial class ExportService
         return args;
     }
 
-    private static string PickCpuAv1Encoder()
+    private static string PickCpuFallbackEncoder(string gpuEncoder)
     {
+        var preferHevc = gpuEncoder.Contains("hevc", StringComparison.Ordinal);
+        var preferH264 = gpuEncoder.Contains("h264", StringComparison.Ordinal);
+
         var ffmpeg = FfmpegToolPaths.FindFfmpeg();
         if (string.IsNullOrEmpty(ffmpeg))
+        {
+            if (preferH264) return "libx264";
+            if (preferHevc) return "libx265";
             return "libaom-av1";
+        }
 
         try
         {
@@ -286,24 +293,30 @@ public sealed partial class ExportService
                 CreateNoWindow = true,
             };
             if (!probe.Start())
-                return "libaom-av1";
+                return preferH264 ? "libx264" : preferHevc ? "libx265" : "libaom-av1";
 
             var output = probe.StandardOutput.ReadToEnd();
             if (!probe.WaitForExit(10_000))
             {
                 TryKill(probe);
-                return "libaom-av1";
+                return preferH264 ? "libx264" : preferHevc ? "libx265" : "libaom-av1";
             }
 
+            if (preferH264 && output.Contains("libx264", StringComparison.Ordinal))
+                return "libx264";
+            if (preferHevc && output.Contains("libx265", StringComparison.Ordinal))
+                return "libx265";
             if (output.Contains("libsvtav1", StringComparison.Ordinal))
                 return "libsvtav1";
             if (output.Contains("libaom-av1", StringComparison.Ordinal))
                 return "libaom-av1";
+            if (output.Contains("libx265", StringComparison.Ordinal))
+                return "libx265";
             return "libx264";
         }
         catch
         {
-            return "libaom-av1";
+            return preferH264 ? "libx264" : preferHevc ? "libx265" : "libaom-av1";
         }
     }
 

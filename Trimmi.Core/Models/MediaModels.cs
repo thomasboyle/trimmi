@@ -27,7 +27,6 @@ public sealed class FormatOption
     public string Id { get; init; } = "";
     public string Label { get; init; } = "";
     public string Container { get; init; } = "";
-    public string VideoCodecHint { get; init; } = "";
     public string HelperText { get; init; } = "";
     public string DefaultExtension { get; init; } = "";
 }

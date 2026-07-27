@@ -135,8 +135,7 @@ public sealed partial class MainWindow : Window
         EncoderCombo.Items.Clear();
         foreach (var enc in _caps.Encoders)
         {
-            var label = string.IsNullOrEmpty(enc.Badge) ? enc.Label : $"{enc.Label}  [{enc.Badge}]";
-            EncoderCombo.Items.Add(new ComboBoxItem { Content = label, Tag = enc.Id });
+            EncoderCombo.Items.Add(new ComboBoxItem { Content = enc.Label, Tag = enc.Id });
         }
 
         if (EncoderCombo.Items.Count > 0)
