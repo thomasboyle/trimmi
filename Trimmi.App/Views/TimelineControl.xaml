@@ -21,62 +21,64 @@
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch" />
 
-        <Grid
-            x:Name="FilmstripHost"
-            Grid.Row="1"
-            Background="#2A2924"
-            CornerRadius="10"
-            BorderBrush="#FF6B744F"
-            BorderThickness="1"
-            PointerPressed="Filmstrip_PointerPressed"
-            PointerMoved="Filmstrip_PointerMoved"
-            PointerReleased="Filmstrip_PointerReleased"
-            PointerCanceled="Filmstrip_PointerReleased"
-            PointerCaptureLost="Filmstrip_PointerReleased"
-            SizeChanged="FilmstripHost_SizeChanged">
+        <Grid Grid.Row="1">
+            <Grid
+                x:Name="FilmstripHost"
+                Background="#2A2924"
+                CornerRadius="10"
+                BorderBrush="#FF6B744F"
+                BorderThickness="1"
+                PointerPressed="Filmstrip_PointerPressed"
+                PointerMoved="Filmstrip_PointerMoved"
+                PointerReleased="Filmstrip_PointerReleased"
+                PointerCanceled="Filmstrip_PointerReleased"
+                PointerCaptureLost="Filmstrip_PointerReleased"
+                SizeChanged="FilmstripHost_SizeChanged">
 
-            <ItemsControl x:Name="ThumbnailStrip" IsHitTestVisible="False">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Image
-                            Stretch="UniformToFill"
-                            Source="{Binding}"
-                            Width="80"
-                            Height="54" />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                <ItemsControl x:Name="ThumbnailStrip" IsHitTestVisible="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Image
+                                Stretch="UniformToFill"
+                                Source="{Binding}"
+                                Width="80"
+                                Height="54" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-            <Border
-                x:Name="DimLeft"
-                HorizontalAlignment="Left"
-                Background="#8C1E1D1A"
-                IsHitTestVisible="False" />
-            <Border
-                x:Name="DimRight"
-                HorizontalAlignment="Left"
-                Background="#8C1E1D1A"
-                IsHitTestVisible="False" />
-            <Border
-                x:Name="SelectionOverlay"
-                HorizontalAlignment="Left"
-                Background="#508F9A6E"
-                BorderBrush="#FFA7B18F"
-                BorderThickness="1.5"
-                IsHitTestVisible="False" />
+                <Border
+                    x:Name="DimLeft"
+                    HorizontalAlignment="Left"
+                    Background="#8C1E1D1A"
+                    IsHitTestVisible="False" />
+                <Border
+                    x:Name="DimRight"
+                    HorizontalAlignment="Left"
+                    Background="#8C1E1D1A"
+                    IsHitTestVisible="False" />
+                <Border
+                    x:Name="SelectionOverlay"
+                    HorizontalAlignment="Left"
+                    Background="#508F9A6E"
+                    BorderBrush="#FFA7B18F"
+                    BorderThickness="1.5"
+                    IsHitTestVisible="False" />
 
-            <Border
-                x:Name="Playhead"
-                Width="2"
-                HorizontalAlignment="Left"
-                Background="#FFF7F0E2"
-                IsHitTestVisible="False" />
+                <Border
+                    x:Name="Playhead"
+                    Width="2"
+                    HorizontalAlignment="Left"
+                    Background="#FFF7F0E2"
+                    IsHitTestVisible="False" />
+            </Grid>
 
+            <!-- Thumbs live outside the rounded filmstrip so they can center on the edges. -->
             <Border
                 x:Name="StartThumb"
                 Width="18"

@@ -470,7 +470,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        SeekTo(Math.Max(0, _metadata.DurationMs - 1));
+        SeekTo(Math.Max(Timeline.StartMs, Timeline.EndMs > 0 ? Timeline.EndMs - 1 : 0));
     }
 
     private void StepFrame(int direction)
@@ -483,7 +483,8 @@ public sealed partial class MainWindow : Window
         var fps = _metadata.FrameRate > 0 ? _metadata.FrameRate : 30;
         var stepMs = (long)Math.Max(1, Math.Round(1000.0 / fps));
         var pos = (long)_mediaPlayer.PlaybackSession.Position.TotalMilliseconds + direction * stepMs;
-        SeekTo(Clamp(pos, 0, _metadata.DurationMs));
+        var max = Timeline.EndMs > Timeline.StartMs ? Timeline.EndMs : _metadata.DurationMs;
+        SeekTo(Clamp(pos, Timeline.StartMs, max));
     }
 
     private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -538,17 +539,29 @@ public sealed partial class MainWindow : Window
         if (_mediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
         {
             _mediaPlayer.Pause();
+            return;
         }
-        else
+
+        var pos = (long)_mediaPlayer.PlaybackSession.Position.TotalMilliseconds;
+        if (pos >= Timeline.EndMs && Timeline.EndMs > Timeline.StartMs)
         {
-            _mediaPlayer.Play();
+            SeekTo(Timeline.StartMs);
         }
+
+        _mediaPlayer.Play();
     }
 
     private void Timeline_TrimChanged(object? sender, EventArgs e)
     {
         SyncTrimFields();
         UpdateDurationLabel();
+
+        var pos = (long)_mediaPlayer.PlaybackSession.Position.TotalMilliseconds;
+        if (Timeline.EndMs > 0 && pos >= Timeline.EndMs)
+        {
+            _mediaPlayer.Pause();
+            SeekTo(Math.Max(Timeline.StartMs, Timeline.EndMs - 1));
+        }
     }
 
     private void Timeline_SeekRequested(object? sender, long ms) => SeekTo(ms);
@@ -571,6 +584,15 @@ public sealed partial class MainWindow : Window
         var ms = (long)sender.Position.TotalMilliseconds;
         DispatcherQueue.TryEnqueue(() =>
         {
+            if (sender.PlaybackState == MediaPlaybackState.Playing
+                && Timeline.EndMs > Timeline.StartMs
+                && ms >= Timeline.EndMs)
+            {
+                _mediaPlayer.Pause();
+                SeekTo(Timeline.EndMs);
+                return;
+            }
+
             Timeline.PositionMs = ms;
             UpdateTimeLabels(ms);
         });

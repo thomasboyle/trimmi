@@ -149,7 +149,7 @@ public sealed partial class TimelineControl : UserControl
     private void RefreshLayout()
     {
         var width = FilmstripHost.ActualWidth;
-        if (width <= 0 || DurationMs <= 0)
+        if (width <= 0)
         {
             BuildRuler();
             DimLeft.Width = 0;
@@ -158,9 +158,26 @@ public sealed partial class TimelineControl : UserControl
             SelectionOverlay.Width = 0;
             SelectionOverlay.Margin = new Thickness(0);
             Playhead.Margin = new Thickness(0, -4, 0, -2);
-            StartThumb.Margin = new Thickness(0, -2, 0, -2);
-            EndThumb.Margin = new Thickness(0, -2, 0, -2);
+            StartThumb.Margin = new Thickness(0, -4, 0, -4);
+            EndThumb.Margin = new Thickness(0, -4, 0, -4);
             HandleLabelCanvas.Children.Clear();
+            return;
+        }
+
+        // Empty / no-duration: show full-range markers so both ends are visible.
+        if (DurationMs <= 0)
+        {
+            BuildRuler();
+            DimLeft.Width = 0;
+            DimRight.Width = 0;
+            DimRight.Margin = new Thickness(0);
+            SelectionOverlay.Margin = new Thickness(0);
+            SelectionOverlay.Width = width;
+            Playhead.Margin = new Thickness(0, -4, 0, -2);
+            PlaceThumbs(0, width, width);
+            HandleLabelCanvas.Children.Clear();
+            AddHandleLabel("Start", 0, width, isStart: true);
+            AddHandleLabel("End", width, width, isStart: false);
             return;
         }
 
@@ -176,23 +193,28 @@ public sealed partial class TimelineControl : UserControl
         SelectionOverlay.Width = Math.Max(1, endX - startX);
 
         Playhead.Margin = new Thickness(playX - 1, -4, 0, -2);
-
-        const double thumbHalf = 9;
-        var startThumbX = Math.Clamp(startX - thumbHalf, 0, Math.Max(0, width - thumbHalf * 2));
-        var endThumbX = Math.Clamp(endX - thumbHalf, 0, Math.Max(0, width - thumbHalf * 2));
-        // Keep start/end distinct when range is full width
-        if (Math.Abs(endThumbX - startThumbX) < thumbHalf * 2)
-        {
-            startThumbX = 0;
-            endThumbX = Math.Max(0, width - thumbHalf * 2);
-        }
-
-        StartThumb.Margin = new Thickness(startThumbX, -4, 0, -4);
-        EndThumb.Margin = new Thickness(endThumbX, -4, 0, -4);
+        PlaceThumbs(startX, endX, width);
 
         BuildRuler();
         BuildHandleLabels(startX, endX, width);
         RefreshThumbnailWidths();
+    }
+
+    private void PlaceThumbs(double startX, double endX, double width)
+    {
+        const double thumbHalf = 9;
+        const double thumbWidth = thumbHalf * 2;
+        // Center thumbs on the cut; allow overhang past the track so edge times have no inset gap.
+        var startThumbX = startX - thumbHalf;
+        var endThumbX = endX - thumbHalf;
+        if (Math.Abs(endThumbX - startThumbX) < thumbWidth)
+        {
+            startThumbX = -thumbHalf;
+            endThumbX = width - thumbHalf;
+        }
+
+        StartThumb.Margin = new Thickness(startThumbX, -4, 0, -4);
+        EndThumb.Margin = new Thickness(endThumbX, -4, 0, -4);
     }
 
     private void RefreshThumbnailWidths()
