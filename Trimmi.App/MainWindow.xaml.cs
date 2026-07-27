@@ -38,12 +38,15 @@ public sealed partial class MainWindow : Window
     private readonly MediaProbeService _probe = new();
     private readonly ExportService _exporter = new();
     private readonly ThumbnailService _thumbnails = new();
+    private readonly UpdateService _updates = new();
     private readonly MediaPlayer _mediaPlayer = new();
     private readonly ObservableCollection<BitmapImage> _timelineThumbs = [];
 
     private VideoMetadata? _metadata;
+    private AppUpdateInfo? _pendingUpdate;
     private CancellationTokenSource? _thumbCts;
     private CancellationTokenSource? _exportCts;
+    private CancellationTokenSource? _updateCts;
     private bool _updatingFields;
     private bool _dropZoneHovered;
     private bool _fullscreen;
@@ -88,7 +91,93 @@ public sealed partial class MainWindow : Window
         }
 
         _ = DetectEncodersAsync();
+        _ = CheckForUpdatesAsync();
         TryLoadCliArgument();
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            var update = await _updates.CheckForUpdateAsync().ConfigureAwait(true);
+            if (update is null)
+                return;
+
+            _pendingUpdate = update;
+            UpdateMessageText.Text =
+                $"Trimmi {update.Version} is ready (you have {_updates.CurrentVersion}).";
+            UpdateProgressBar.Visibility = Visibility.Collapsed;
+            UpdateProgressBar.Value = 0;
+            UpdateNowButton.IsEnabled = true;
+            UpdateNowButton.Content = "Update";
+            UpdateBanner.Visibility = Visibility.Visible;
+        }
+        catch
+        {
+            // Offline or API unreachable — skip quietly.
+        }
+    }
+
+    private void UpdateDismissButton_Click(object sender, RoutedEventArgs e)
+    {
+        _updateCts?.Cancel();
+        UpdateBanner.Visibility = Visibility.Collapsed;
+        _pendingUpdate = null;
+    }
+
+    private async void UpdateNowButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pendingUpdate is null)
+            return;
+
+        _updateCts?.Cancel();
+        _updateCts = new CancellationTokenSource();
+        var token = _updateCts.Token;
+        var update = _pendingUpdate;
+
+        UpdateNowButton.IsEnabled = false;
+        UpdateLaterButton.IsEnabled = false;
+        UpdateDismissButton.IsEnabled = false;
+        UpdateProgressBar.Visibility = Visibility.Visible;
+        UpdateProgressBar.Value = 0;
+        UpdateNowButton.Content = "Downloading…";
+        UpdateMessageText.Text = $"Downloading Trimmi {update.Version}…";
+
+        try
+        {
+            var installerPath = UpdateService.DefaultInstallerPath(update.Version);
+            var progress = new Progress<double>(pct =>
+            {
+                UpdateProgressBar.Value = pct;
+                UpdateMessageText.Text = $"Downloading Trimmi {update.Version}… {(int)pct}%";
+            });
+
+            await _updates.DownloadUpdateAsync(update, installerPath, progress, token)
+                .ConfigureAwait(true);
+
+            UpdateMessageText.Text = "Starting installer…";
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = installerPath,
+                UseShellExecute = true,
+            });
+
+            // Close so the installer can replace running files.
+            Close();
+        }
+        catch (OperationCanceledException)
+        {
+            UpdateBanner.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            UpdateProgressBar.Visibility = Visibility.Collapsed;
+            UpdateNowButton.IsEnabled = true;
+            UpdateLaterButton.IsEnabled = true;
+            UpdateDismissButton.IsEnabled = true;
+            UpdateNowButton.Content = "Update";
+            UpdateMessageText.Text = $"Update failed: {ex.Message}";
+        }
     }
 
     private async Task DetectEncodersAsync()

@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <TrimmiVersion>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim())</TrimmiVersion>
+    <Version>$(TrimmiVersion)</Version>
+    <AssemblyVersion>$(TrimmiVersion).0</AssemblyVersion>
+    <FileVersion>$(TrimmiVersion).0</FileVersion>
+    <InformationalVersion>$(TrimmiVersion)</InformationalVersion>
+  </PropertyGroup>
+</Project>
