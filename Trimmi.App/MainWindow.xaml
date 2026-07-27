@@ -66,7 +66,9 @@
                                     DragOver="DropZone_DragOver"
                                     Drop="DropZone_Drop"
                                     PointerEntered="DropZone_PointerEntered"
-                                    PointerExited="DropZone_PointerExited" />
+                                    PointerExited="DropZone_PointerExited"
+                                    Tapped="DropZone_Tapped"
+                                    ToolTipService.ToolTip="Click to select a video file" />
                                 <StackPanel
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
@@ -106,14 +108,14 @@
                                     </StackPanel>
                                 </Button>
                                 <Image
-                                    Width="48"
-                                    Height="48"
-                                    Margin="10"
+                                    Width="40"
+                                    Height="40"
+                                    Margin="0,0,18,52"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom"
                                     IsHitTestVisible="False"
-                                    Opacity="0.85"
-                                    Source="{StaticResource DecoLeafSprigBitmap}"
+                                    Opacity="0.9"
+                                    Source="{StaticResource IconLeafBitmap}"
                                     Stretch="Uniform" />
                             </Grid>
 
@@ -264,44 +266,50 @@
 
                             <Button
                                 x:Name="PlayPauseButton"
-                                Width="36"
-                                Height="36"
                                 Click="PlayPauseButton_Click"
-                                Content="&#xE768;"
-                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                Style="{StaticResource GlassSecondaryButtonStyle}"
-                                ToolTipService.ToolTip="Play / Pause" />
+                                Style="{StaticResource GlassIconButtonStyle}"
+                                ToolTipService.ToolTip="Play / Pause">
+                                <FontIcon
+                                    x:Name="PlayPauseIcon"
+                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="&#xE768;" />
+                            </Button>
                             <Button
                                 Grid.Column="1"
-                                Width="36"
-                                Height="36"
                                 Click="PrevFrameButton_Click"
-                                Content="&#xE100;"
-                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                Style="{StaticResource GlassSecondaryButtonStyle}"
-                                ToolTipService.ToolTip="Previous frame" />
+                                Style="{StaticResource GlassIconButtonStyle}"
+                                ToolTipService.ToolTip="Previous frame">
+                                <FontIcon
+                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="&#xE76B;" />
+                            </Button>
                             <Button
                                 Grid.Column="2"
-                                Width="36"
-                                Height="36"
                                 Click="NextFrameButton_Click"
-                                Content="&#xE101;"
-                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                Style="{StaticResource GlassSecondaryButtonStyle}"
-                                ToolTipService.ToolTip="Next frame" />
+                                Style="{StaticResource GlassIconButtonStyle}"
+                                ToolTipService.ToolTip="Next frame">
+                                <FontIcon
+                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="&#xE76C;" />
+                            </Button>
                             <Button
                                 Grid.Column="3"
-                                Width="36"
-                                Height="36"
                                 Click="JumpEndButton_Click"
-                                Content="&#xE101;"
-                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                Style="{StaticResource GlassSecondaryButtonStyle}"
-                                ToolTipService.ToolTip="Jump to end" />
+                                Style="{StaticResource GlassIconButtonStyle}"
+                                ToolTipService.ToolTip="Jump to end">
+                                <FontIcon
+                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="&#xE893;" />
+                            </Button>
                             <FontIcon
                                 Grid.Column="4"
                                 Margin="8,0,0,0"
                                 VerticalAlignment="Center"
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
                                 FontSize="14"
                                 Foreground="{ThemeResource AppInkBrush}"
                                 Glyph="&#xE767;" />
@@ -323,20 +331,22 @@
                                 Text="00:00:00.000 / 00:00:00.000" />
                             <Button
                                 Grid.Column="9"
-                                Width="36"
-                                Height="36"
                                 Click="FullscreenButton_Click"
-                                Content="&#xE740;"
-                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                Style="{StaticResource GlassSecondaryButtonStyle}"
-                                ToolTipService.ToolTip="Fullscreen" />
+                                Style="{StaticResource GlassIconButtonStyle}"
+                                ToolTipService.ToolTip="Fullscreen">
+                                <FontIcon
+                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                    FontSize="16"
+                                    Glyph="&#xE740;" />
+                            </Button>
                         </Grid>
 
                         <views:TimelineControl
                             x:Name="Timeline"
                             Grid.Row="3"
                             TrimChanged="Timeline_TrimChanged"
-                            SeekRequested="Timeline_SeekRequested" />
+                            SeekRequested="Timeline_SeekRequested"
+                            StartMarkerReleased="Timeline_StartMarkerReleased" />
 
                         <Grid Grid.Row="4" ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
@@ -353,34 +363,45 @@
                                 VerticalAlignment="Center"
                                 Style="{StaticResource GlassFieldLabelStyle}"
                                 Text="Start" />
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                            <StackPanel
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="2"
+                                VerticalAlignment="Center">
                                 <TextBox
                                     x:Name="StartEdit"
-                                    Width="120"
+                                    Width="118"
                                     LostFocus="StartEdit_LostFocus"
-                                    Style="{StaticResource GlassTextBoxStyle}"
+                                    Style="{StaticResource GlassTimeEditStyle}"
                                     Text="00:00:00.000"
-                                    TextAlignment="Center"
                                     KeyDown="TrimEdit_KeyDown" />
-                                <StackPanel Spacing="0">
+                                <StackPanel Spacing="0" VerticalAlignment="Center">
                                     <Button
-                                        Width="22"
-                                        Height="18"
+                                        Width="20"
+                                        Height="16"
                                         Padding="0"
+                                        MinWidth="20"
+                                        MinHeight="16"
                                         Click="StartUp_Click"
-                                        Content="&#xE70E;"
-                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                        FontSize="10"
-                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                        Style="{StaticResource GlassIconButtonStyle}">
+                                        <FontIcon
+                                            FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                            FontSize="9"
+                                            Glyph="&#xE70E;" />
+                                    </Button>
                                     <Button
-                                        Width="22"
-                                        Height="18"
+                                        Width="20"
+                                        Height="16"
                                         Padding="0"
+                                        MinWidth="20"
+                                        MinHeight="16"
                                         Click="StartDown_Click"
-                                        Content="&#xE70D;"
-                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                        FontSize="10"
-                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                        Style="{StaticResource GlassIconButtonStyle}">
+                                        <FontIcon
+                                            FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                            FontSize="9"
+                                            Glyph="&#xE70D;" />
+                                    </Button>
                                 </StackPanel>
                             </StackPanel>
 
@@ -397,34 +418,45 @@
                                 VerticalAlignment="Center"
                                 Style="{StaticResource GlassFieldLabelStyle}"
                                 Text="End" />
-                            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4">
+                            <StackPanel
+                                Grid.Column="6"
+                                Orientation="Horizontal"
+                                Spacing="2"
+                                VerticalAlignment="Center">
                                 <TextBox
                                     x:Name="EndEdit"
-                                    Width="120"
+                                    Width="118"
                                     LostFocus="EndEdit_LostFocus"
-                                    Style="{StaticResource GlassTextBoxStyle}"
+                                    Style="{StaticResource GlassTimeEditStyle}"
                                     Text="00:00:00.000"
-                                    TextAlignment="Center"
                                     KeyDown="TrimEdit_KeyDown" />
-                                <StackPanel Spacing="0">
+                                <StackPanel Spacing="0" VerticalAlignment="Center">
                                     <Button
-                                        Width="22"
-                                        Height="18"
+                                        Width="20"
+                                        Height="16"
                                         Padding="0"
+                                        MinWidth="20"
+                                        MinHeight="16"
                                         Click="EndUp_Click"
-                                        Content="&#xE70E;"
-                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                        FontSize="10"
-                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                        Style="{StaticResource GlassIconButtonStyle}">
+                                        <FontIcon
+                                            FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                            FontSize="9"
+                                            Glyph="&#xE70E;" />
+                                    </Button>
                                     <Button
-                                        Width="22"
-                                        Height="18"
+                                        Width="20"
+                                        Height="16"
                                         Padding="0"
+                                        MinWidth="20"
+                                        MinHeight="16"
                                         Click="EndDown_Click"
-                                        Content="&#xE70D;"
-                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                        FontSize="10"
-                                        Style="{StaticResource GlassSecondaryButtonStyle}" />
+                                        Style="{StaticResource GlassIconButtonStyle}">
+                                        <FontIcon
+                                            FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                            FontSize="9"
+                                            Glyph="&#xE70D;" />
+                                    </Button>
                                 </StackPanel>
                             </StackPanel>
                         </Grid>

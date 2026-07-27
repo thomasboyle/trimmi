@@ -219,6 +219,9 @@ public sealed partial class MainWindow : Window
     private async void SelectFileButton_Click(object sender, RoutedEventArgs e) =>
         await PickSourceFileAsync();
 
+    private async void DropZone_Tapped(object sender, TappedRoutedEventArgs e) =>
+        await PickSourceFileAsync();
+
     private async Task PickSourceFileAsync()
     {
         var picker = new FileOpenPicker();
@@ -461,6 +464,12 @@ public sealed partial class MainWindow : Window
 
     private void Timeline_SeekRequested(object? sender, long ms) => SeekTo(ms);
 
+    private void Timeline_StartMarkerReleased(object? sender, EventArgs e)
+    {
+        SeekTo(Timeline.StartMs);
+        _mediaPlayer.Play();
+    }
+
     private void SeekTo(long ms)
     {
         _mediaPlayer.PlaybackSession.Position = TimeSpan.FromMilliseconds(ms);
@@ -482,7 +491,7 @@ public sealed partial class MainWindow : Window
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            PlayPauseButton.Content = sender.PlaybackState == MediaPlaybackState.Playing
+            PlayPauseIcon.Glyph = sender.PlaybackState == MediaPlaybackState.Playing
                 ? "\uE769"
                 : "\uE768";
         });

@@ -15,6 +15,7 @@ public sealed partial class TimelineControl : UserControl
 {
     public event EventHandler? TrimChanged;
     public event EventHandler<long>? SeekRequested;
+    public event EventHandler? StartMarkerReleased;
 
     public static readonly DependencyProperty DurationMsProperty =
         DependencyProperty.Register(nameof(DurationMs), typeof(long), typeof(TimelineControl),
@@ -372,11 +373,19 @@ public sealed partial class TimelineControl : UserControl
             return;
         }
 
+        var released = _drag;
         _drag = DragTarget.None;
         FilmstripHost.ReleasePointerCaptures();
         StartThumb.ReleasePointerCaptures();
         EndThumb.ReleasePointerCaptures();
         e.Handled = true;
+
+        if (released == DragTarget.Start)
+        {
+            PositionMs = StartMs;
+            SeekRequested?.Invoke(this, StartMs);
+            StartMarkerReleased?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void EmitTrim()
